@@ -53,7 +53,7 @@ module core (
 
   always @(posedge clk, negedge rst_n) begin
     if (!rst_n) pc_reg <= `START_ADDR;
-    else if (state == `WB) pc_reg <= pc_reg + 1;
+    else if (state == `WB) pc_reg <= pc_reg + `WORD_LEN'h4;
   end
 
   assign addr = pc_reg;

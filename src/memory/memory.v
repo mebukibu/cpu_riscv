@@ -12,7 +12,7 @@ module memory #(
   reg [`WORD_LEN-1:0] mem [0:depth-1];
 
   always @(posedge clk) begin
-    inst <= mem[addr];
+    inst <= mem[addr[`WORD_LEN-1:2]];
   end
 
   initial begin
