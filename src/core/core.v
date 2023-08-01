@@ -1,5 +1,12 @@
 `include "consts.vh"
 
+`define IDLE  3'b000
+`define IF    3'b001
+`define ID    3'b010
+`define EX    3'b011
+`define MEM   3'b100
+`define WB    3'b101
+
 module core (
   input wire clk,
   input wire rst_n,
@@ -21,18 +28,32 @@ module core (
   wire [`WORD_LEN-1:0] rs2_data;
 
   //**********************************
+  // State Machine
+
+  reg [2:0] state;
+  always @(posedge clk, negedge rst_n) begin
+    if (!rst_n) state <= `IDLE;
+    else begin
+      case (state)
+        `IDLE   : state <= `IF;
+        `IF     : state <= `ID;
+        `ID     : state <= `EX;
+        `EX     : state <= `MEM;
+        `MEM    : state <= `WB;
+        `WB     : state <= `IF; 
+        default : state <= 3'bXXX; 
+      endcase
+    end
+  end
+
+  //**********************************
   // Instruction Fetch (IF) Stage
 
   initial pc_reg <= `START_ADDR;
 
   always @(posedge clk, negedge rst_n) begin
     if (!rst_n) pc_reg <= `START_ADDR;
-    else pc_reg <= pc_reg + 1;
-  end
-
-  always @(posedge clk, negedge rst_n) begin
-    if (!rst_n) inst_reg <= 0;
-    else inst_reg <= inst;
+    else if (state == `WB) pc_reg <= pc_reg + 1;
   end
 
   assign addr = pc_reg;
@@ -46,10 +67,10 @@ module core (
       rs2_addr <= 0;
       wb_addr <= 0;
     end
-    else begin
-      rs1_addr <= inst_reg[19:15];
-      rs2_addr <= inst_reg[24:20];
-      wb_addr <= inst_reg[11:7];
+    else if (state == `ID) begin
+      rs1_addr <= inst[19:15];
+      rs2_addr <= inst[24:20];
+      wb_addr <= inst[11:7];
     end
   end
 

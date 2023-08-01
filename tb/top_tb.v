@@ -11,9 +11,9 @@ module top_tb ();
 
   initial begin
     $dumpvars;
-    rst_n = 0; #5
+    rst_n = 0; #20
     rst_n = 1; #5
-    #100
+    #200
     $finish;
   end
 
