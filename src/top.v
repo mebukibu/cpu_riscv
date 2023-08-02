@@ -10,6 +10,8 @@ module top (
   wire [`WORD_LEN-1:0] inst;
   wire [`WORD_LEN-1:0] addr_d;
   wire [`WORD_LEN-1:0] rdata;
+  wire wen;
+  wire [`WORD_LEN-1:0] wdata;
 
   core core0 (
     .clk(clk),
@@ -20,7 +22,9 @@ module top (
     .addr_i(addr_i),
     // DmemPort
     .rdata(rdata),
-    .addr_d(addr_d)
+    .addr_d(addr_d),
+    .wen(wen),
+    .wdata(wdata)
   );
 
   memory memory0 (
@@ -30,7 +34,9 @@ module top (
     .inst(inst),
     // DmemPort
     .addr_d(addr_d),
-    .rdata(rdata)
+    .rdata(rdata),
+    .wen(wen),
+    .wdata(wdata)
   );
   
 endmodule
