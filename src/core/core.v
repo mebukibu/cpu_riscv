@@ -121,10 +121,16 @@ module core (
         `LW : alu_out <= rs1_data + imm_i_sext;
         `SW : alu_out <= rs1_data + imm_s_sext;
         `ADDI : alu_out <= rs1_data + imm_i_sext;
+        `ANDI : alu_out <= rs1_data & imm_i_sext;
+        `ORI : alu_out <= rs1_data | imm_i_sext;
+        `XORI : alu_out <= rs1_data ^ imm_i_sext;
         default:
         case (inst_masked_r)
           `ADD : alu_out <= rs1_data + rs2_data;
           `SUB : alu_out <= rs1_data - rs2_data;
+          `AND : alu_out <= rs1_data & rs2_data;
+          `OR  : alu_out <= rs1_data | rs2_data;
+          `XOR : alu_out <= rs1_data ^ rs2_data;
           default: alu_out <= `WORD_LEN'b0;
         endcase
       endcase
@@ -153,7 +159,9 @@ module core (
       end
     end
     else if (state == `WB) begin
-      if (inst_masked_is == `LW | inst_masked_r == `ADD | inst_masked_r == `SUB | inst_masked_is == `ADDI)
+      if (inst_masked_is == `LW | inst_masked_r == `ADD | inst_masked_r == `SUB | inst_masked_is == `ADDI |
+          inst_masked_r == `AND | inst_masked_r == `OR  | inst_masked_r == `XOR |
+          inst_masked_is == `ANDI | inst_masked_is == `ORI  | inst_masked_is == `XORI)
         regfile[wb_addr] <= wb_data;
     end
   end

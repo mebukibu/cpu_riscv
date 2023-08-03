@@ -39,12 +39,14 @@ def hexgen(data):
             | (regs[arg2[1]] << 15) \
             | (int(imm[7:12], 2) << 7) \
             | (int(imm[0:7], 2) << 25)
-    elif line[0] == 'add' or line[0] == 'sub':
+    elif line[0] == 'add' or line[0] == 'sub' or \
+         line[0] == 'and' or line[0] == 'or'  or line[0] == 'xor':
       inst = insts[line[0]] \
             | (regs[line[1]] << 7) \
             | (regs[line[2]] << 15) \
             | (regs[line[3]] << 20)
-    elif line[0] == 'addi':
+    elif line[0] == 'addi' or \
+         line[0] == 'andi' or line[0] == 'ori'  or line[0] == 'xori':
       inst = insts[line[0]] \
             | (regs[line[1]] << 7) \
             | (regs[line[2]] << 15) \
