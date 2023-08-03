@@ -28,20 +28,31 @@ module core (
   reg [`WORD_LEN-1:0] inst_reg;
 
   // For ID
-  reg [`ADDR_LEN-1:0] rs1_addr;
-  reg [`ADDR_LEN-1:0] rs2_addr;
-  reg [`ADDR_LEN-1:0] wb_addr;
+  wire [`ADDR_LEN-1:0] rs1_addr;
+  wire [`ADDR_LEN-1:0] rs2_addr;
+  wire [`ADDR_LEN-1:0] wb_addr;
   wire [`WORD_LEN-1:0] rs1_data;
   wire [`WORD_LEN-1:0] rs2_data;
 
-  reg [11:0] imm_i;
+  wire [11:0] imm_i;
   wire [`WORD_LEN-1:0] imm_i_sext;
-  reg [11:0] imm_s;
+  wire [11:0] imm_s;
   wire [`WORD_LEN-1:0] imm_s_sext;
 
-  // For EX
   wire [`WORD_LEN-1:0] inst_masked_is;
   wire [`WORD_LEN-1:0] inst_masked_r;
+
+  reg [`EXE_FUN_LEN-1:0] exe_fun;
+  reg [`OP1_LEN-1:0] op1_sel;
+  reg [`OP2_LEN-1:0] op2_sel;
+  reg [`MEM_LEN-1:0] mem_wen;
+  reg [`REN_LEN-1:0] rf_wen;
+  reg [`WB_SEL_LEN-1:0] wb_sel;
+
+  wire [`WORD_LEN-1:0] op1_data;
+  wire [`WORD_LEN-1:0] op2_data;
+
+  // For EX
   reg [`WORD_LEN-1:0] alu_out;
 
   // For WB
@@ -84,55 +95,70 @@ module core (
   //**********************************
   // Instruction Decode (ID) Stage
 
-  always @(posedge clk, negedge rst_n) begin
-    if (!rst_n) begin
-      rs1_addr <= 0;
-      rs2_addr <= 0;
-      wb_addr <= 0;
-      imm_i <= 0;
-      imm_s <= 0;
-    end
-    else if (state == `ID) begin
-      rs1_addr <= inst[19:15];
-      rs2_addr <= inst[24:20];
-      wb_addr <= inst[11:7];
-      imm_i <= inst[31:20];
-      imm_s <= {inst[31:25], inst[11:7]};
-    end
-  end
-
+  assign rs1_addr = inst[19:15];
+  assign rs2_addr = inst[24:20];
+  assign wb_addr = inst[11:7];
   assign rs1_data = (rs1_addr != `ADDR_LEN'b0) ? regfile[rs1_addr] : `WORD_LEN'b0;
   assign rs2_data = (rs2_addr != `ADDR_LEN'b0) ? regfile[rs2_addr] : `WORD_LEN'b0;
 
-  assign imm_i_sext = {{20{imm_i[11]}}, imm_i};
+  assign imm_i = inst[31:20];
+  assign imm_i_sext = {{20{imm_i[11]}}, imm_i};  
+  assign imm_s = {inst[31:25], inst[11:7]};
   assign imm_s_sext = {{20{imm_s[11]}}, imm_s};
-
-
-  //**********************************
-  // Execute (EX) Stage
 
   assign inst_masked_is = inst & `TYPE_IS;
   assign inst_masked_r = inst & `TYPE_R;
 
   always @(posedge clk, negedge rst_n) begin
-    if (!rst_n) alu_out <= 0;
-    else if (state == `EX) begin
+    if (!rst_n) begin
+      exe_fun <= `EXE_FUN_LEN'b0;
+      op1_sel <= `OP1_LEN'b0;
+      op2_sel <= `OP2_LEN'b0;
+      mem_wen <= `MEM_LEN'b0;
+      rf_wen <= `REN_LEN'b0;
+      wb_sel <= `WB_SEL_LEN'b0;
+    end
+    else if (state == `ID) begin
       case (inst_masked_is)
-        `LW : alu_out <= rs1_data + imm_i_sext;
-        `SW : alu_out <= rs1_data + imm_s_sext;
-        `ADDI : alu_out <= rs1_data + imm_i_sext;
-        `ANDI : alu_out <= rs1_data & imm_i_sext;
-        `ORI : alu_out <= rs1_data | imm_i_sext;
-        `XORI : alu_out <= rs1_data ^ imm_i_sext;
+        `LW   : begin exe_fun <= `ALU_ADD; op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMI; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_MEM; end
+        `SW   : begin exe_fun <= `ALU_ADD; op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMS; mem_wen <= `MEM_S; rf_wen <= `REN_X; wb_sel <= `WB_X  ; end
+        `ADDI : begin exe_fun <= `ALU_ADD; op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMI; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
+        `ANDI : begin exe_fun <= `ALU_AND; op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMI; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
+        `ORI  : begin exe_fun <= `ALU_OR ; op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMI; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
+        `XORI : begin exe_fun <= `ALU_XOR; op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMI; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
         default:
         case (inst_masked_r)
-          `ADD : alu_out <= rs1_data + rs2_data;
-          `SUB : alu_out <= rs1_data - rs2_data;
-          `AND : alu_out <= rs1_data & rs2_data;
-          `OR  : alu_out <= rs1_data | rs2_data;
-          `XOR : alu_out <= rs1_data ^ rs2_data;
-          default: alu_out <= `WORD_LEN'b0;
+          `ADD : begin exe_fun <= `ALU_ADD; op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
+          `SUB : begin exe_fun <= `ALU_SUB; op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
+          `AND : begin exe_fun <= `ALU_AND; op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
+          `OR  : begin exe_fun <= `ALU_OR ; op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
+          `XOR : begin exe_fun <= `ALU_XOR; op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
+          default: begin exe_fun <= `ALU_X; op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_X; wb_sel <= `WB_X  ; end
         endcase
+      endcase
+    end
+  end
+
+  assign op1_data = (op1_sel == `OP1_RS1) ? rs1_data : `WORD_LEN'bZ;
+
+  assign op2_data = (op2_sel == `OP2_RS2) ? rs2_data : `WORD_LEN'bZ;
+  assign op2_data = (op2_sel == `OP2_IMI) ? imm_i_sext : `WORD_LEN'bZ;
+  assign op2_data = (op2_sel == `OP2_IMS) ? imm_s_sext : `WORD_LEN'bZ;
+
+
+  //**********************************
+  // Execute (EX) Stage
+
+  always @(posedge clk, negedge rst_n) begin
+    if (!rst_n) alu_out <= `WORD_LEN'b0;
+    else if (state == `EX) begin
+      case (exe_fun)
+        `ALU_ADD : alu_out <= op1_data + op2_data;
+        `ALU_SUB : alu_out <= op1_data - op2_data;
+        `ALU_AND : alu_out <= op1_data & op2_data;
+        `ALU_OR  : alu_out <= op1_data | op2_data;
+        `ALU_XOR : alu_out <= op1_data ^ op2_data;
+        default  : alu_out <= `WORD_LEN'b0;
       endcase
     end
   end  
@@ -143,14 +169,14 @@ module core (
 
   assign addr_d = alu_out;
 
-  assign wen = (state == `MEM) & (inst_masked_is == `SW);
+  assign wen = (state == `MEM) & (|mem_wen);
   assign wdata = rs2_data;
 
 
   //**********************************
   // Writeback (WB) Stage
 
-  assign wb_data = (inst_masked_is == `LW) ? rdata : alu_out;
+  assign wb_data = (wb_sel == `WB_MEM) ? rdata : alu_out;
 
   always @(posedge clk, negedge rst_n) begin
     if (!rst_n) begin
@@ -159,9 +185,7 @@ module core (
       end
     end
     else if (state == `WB) begin
-      if (inst_masked_is == `LW | inst_masked_r == `ADD | inst_masked_r == `SUB | inst_masked_is == `ADDI |
-          inst_masked_r == `AND | inst_masked_r == `OR  | inst_masked_r == `XOR |
-          inst_masked_is == `ANDI | inst_masked_is == `ORI  | inst_masked_is == `XORI)
+      if (rf_wen == `REN_S)
         regfile[wb_addr] <= wb_data;
     end
   end

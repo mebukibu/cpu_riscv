@@ -1,7 +1,7 @@
 `include "consts.vh"
 
 module memory #(
-  parameter integer depth = 12      // 2^12 = 4096
+  parameter integer depth = 4096
 ) (
   input wire clk,
   // ImemPort
