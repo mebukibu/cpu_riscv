@@ -41,6 +41,7 @@ module core (
 
   // For EX
   wire [`WORD_LEN-1:0] inst_masked_is;
+  wire [`WORD_LEN-1:0] inst_masked_r;
   reg [`WORD_LEN-1:0] alu_out;
 
   // For WB
@@ -111,6 +112,7 @@ module core (
   // Execute (EX) Stage
 
   assign inst_masked_is = inst & `TYPE_IS;
+  assign inst_masked_r = inst & `TYPE_R;
 
   always @(posedge clk, negedge rst_n) begin
     if (!rst_n) alu_out <= 0;
@@ -118,7 +120,13 @@ module core (
       case (inst_masked_is)
         `LW : alu_out <= rs1_data + imm_i_sext;
         `SW : alu_out <= rs1_data + imm_s_sext;
-        default: alu_out <= `WORD_LEN'b0;
+        `ADDI : alu_out <= rs1_data + imm_i_sext;
+        default:
+        case (inst_masked_r)
+          `ADD : alu_out <= rs1_data + rs2_data;
+          `SUB : alu_out <= rs1_data - rs2_data;
+          default: alu_out <= `WORD_LEN'b0;
+        endcase
       endcase
     end
   end  
@@ -136,7 +144,7 @@ module core (
   //**********************************
   // Writeback (WB) Stage
 
-  assign wb_data = rdata;
+  assign wb_data = (inst_masked_is == `LW) ? rdata : alu_out;
 
   always @(posedge clk, negedge rst_n) begin
     if (!rst_n) begin
@@ -145,16 +153,14 @@ module core (
       end
     end
     else if (state == `WB) begin
-      case (inst_masked_is)
-        `LW : regfile[wb_addr] <= wb_data;
-        default: ;
-      endcase
+      if (inst_masked_is == `LW | inst_masked_r == `ADD | inst_masked_r == `SUB | inst_masked_is == `ADDI)
+        regfile[wb_addr] <= wb_data;
     end
   end
 
 
   //**********************************
   // Debug
-  assign exit = (inst == `WORD_LEN'h00602823);
+  assign exit = (inst == `WORD_LEN'h00000000);
 
 endmodule

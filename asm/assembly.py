@@ -8,6 +8,7 @@ insts = instructions.insts
 
 regs = {
     'x0' : 0, 'x1' : 1, 'x2' : 2, 'x3' : 3, 'x4' : 4, 'x5' : 5, 'x6' : 6, 'x7' : 7,
+    'x8' : 8,
 }
 
 # from '.s' file, remove ',' and ' '.
@@ -30,7 +31,6 @@ def hexgen(data):
             | (regs[line[1]] << 7) \
             | (regs[arg2[1]] << 15) \
             | (int(arg2[0]) << 20)
-      hex.append(inst)
     elif line[0] == 'sw':
       arg2 = re.split(r'[()]', line[2])
       imm = format(int(arg2[0]), '012b')
@@ -39,9 +39,20 @@ def hexgen(data):
             | (regs[arg2[1]] << 15) \
             | (int(imm[7:12], 2) << 7) \
             | (int(imm[0:7], 2) << 25)
-      hex.append(inst)
+    elif line[0] == 'add' or line[0] == 'sub':
+      inst = insts[line[0]] \
+            | (regs[line[1]] << 7) \
+            | (regs[line[2]] << 15) \
+            | (regs[line[3]] << 20)
+    elif line[0] == 'addi':
+      inst = insts[line[0]] \
+            | (regs[line[1]] << 7) \
+            | (regs[line[2]] << 15) \
+            | (int(line[3]) << 20)
     elif line[0][0:2] == '0x':
-      hex.append(int(line[0][2:], 16))
+      inst = int(line[0][2:], 16)
+    
+    hex.append(inst)
   return hex
 
 # main func
