@@ -22,10 +22,15 @@ module core (
   output wire [`WORD_LEN-1:0] wdata
 );
 
-  // For IF
+  // register
   reg [`WORD_LEN-1:0] regfile [0:`WORD_LEN-1];
+
+  // For IF
   reg [`WORD_LEN-1:0] pc_reg;
-  reg [`WORD_LEN-1:0] inst_reg;
+  wire [`WORD_LEN-1:0] pc_plus4;
+  wire [`WORD_LEN-1:0] pc_next;
+  reg br_flg;
+  reg [`WORD_LEN-1:0] br_target;
 
   // For ID
   wire [`ADDR_LEN-1:0] rs1_addr;
@@ -38,8 +43,10 @@ module core (
   wire [`WORD_LEN-1:0] imm_i_sext;
   wire [11:0] imm_s;
   wire [`WORD_LEN-1:0] imm_s_sext;
+  wire [11:0] imm_b;
+  wire [`WORD_LEN-1:0] imm_b_sext;
 
-  wire [`WORD_LEN-1:0] inst_masked_is;
+  wire [`WORD_LEN-1:0] inst_masked_isb;
   wire [`WORD_LEN-1:0] inst_masked_r;
 
   reg [`EXE_FUN_LEN-1:0] exe_fun;
@@ -84,12 +91,15 @@ module core (
 
   initial pc_reg <= `START_ADDR;
 
+  assign addr_i = pc_reg;
+  assign pc_plus4 = pc_reg + `WORD_LEN'h4;
+
+  assign pc_next = br_flg ? br_target : pc_plus4;
+
   always @(posedge clk, negedge rst_n) begin
     if (!rst_n) pc_reg <= `START_ADDR;
-    else if (state == `WB) pc_reg <= pc_reg + `WORD_LEN'h4;
-  end
-
-  assign addr_i = pc_reg;
+    else if (state == `WB) pc_reg <= pc_next;
+  end  
 
 
   //**********************************
@@ -104,9 +114,11 @@ module core (
   assign imm_i = inst[31:20];
   assign imm_i_sext = {{20{imm_i[11]}}, imm_i};  
   assign imm_s = {inst[31:25], inst[11:7]};
-  assign imm_s_sext = {{20{imm_s[11]}}, imm_s};
+  assign imm_s_sext = {{20{imm_s[11]}}, imm_s};  
+  assign imm_b = {inst[31], inst[7], inst[30:25], inst[11:8]};
+  assign imm_b_sext = {{19{imm_s[11]}}, imm_b, 1'b0};
 
-  assign inst_masked_is = inst & `TYPE_IS;
+  assign inst_masked_isb = inst & `TYPE_ISB;
   assign inst_masked_r = inst & `TYPE_R;
 
   always @(posedge clk, negedge rst_n) begin
@@ -119,7 +131,7 @@ module core (
       wb_sel <= `WB_SEL_LEN'b0;
     end
     else if (state == `ID) begin
-      case (inst_masked_is)
+      case (inst_masked_isb)
         `LW    : begin exe_fun <= `ALU_ADD;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMI; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_MEM; end
         `SW    : begin exe_fun <= `ALU_ADD;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMS; mem_wen <= `MEM_S; rf_wen <= `REN_X; wb_sel <= `WB_X  ; end
         `ADDI  : begin exe_fun <= `ALU_ADD;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMI; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
@@ -128,6 +140,12 @@ module core (
         `XORI  : begin exe_fun <= `ALU_XOR;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMI; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
         `SLTI  : begin exe_fun <= `ALU_SLT;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMI; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
         `SLTIU : begin exe_fun <= `ALU_SLTU; op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMI; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
+        `BEQ   : begin exe_fun <= `BR_BEQ;   op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_X; wb_sel <= `WB_X;   end
+        `BNE   : begin exe_fun <= `BR_BNE;   op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_X; wb_sel <= `WB_X;   end
+        `BLT   : begin exe_fun <= `BR_BLT;   op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_X; wb_sel <= `WB_X;   end
+        `BGE   : begin exe_fun <= `BR_BGE;   op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_X; wb_sel <= `WB_X;   end
+        `BLTU  : begin exe_fun <= `BR_BLTU;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_X; wb_sel <= `WB_X;   end
+        `BGEU  : begin exe_fun <= `BR_BGEU;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_X; wb_sel <= `WB_X;   end
         default:
         case (inst_masked_r)
           `ADD  : begin exe_fun <= `ALU_ADD;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
@@ -160,7 +178,11 @@ module core (
   // Execute (EX) Stage
 
   always @(posedge clk, negedge rst_n) begin
-    if (!rst_n) alu_out <= `WORD_LEN'b0;
+    if (!rst_n) begin
+      alu_out <= `WORD_LEN'b0;
+      br_flg <= 1'b0;
+      br_target <= `WORD_LEN'b0;
+    end
     else if (state == `EX) begin
       case (exe_fun)
         `ALU_ADD  : alu_out <= op1_data + op2_data;
@@ -175,6 +197,16 @@ module core (
         `ALU_SLTU : alu_out <= $signed(op1_data) < $signed(op2_data);
         default  : alu_out <= `WORD_LEN'b0;
       endcase
+      case (exe_fun)
+        `BR_BEQ  : br_flg <=  (op1_data == op2_data);
+        `BR_BNE  : br_flg <= !(op1_data == op2_data);
+        `BR_BLT  : br_flg <=  ($signed(op1_data) < $signed(op2_data));
+        `BR_BGE  : br_flg <= !($signed(op1_data) < $signed(op2_data));
+        `BR_BLTU : br_flg <=  (op1_data < op2_data);
+        `BR_BGEU : br_flg <= !(op1_data < op2_data);
+        default  : br_flg <= 1'b0; 
+      endcase
+      br_target <= pc_reg + imm_b_sext;
     end
   end  
 

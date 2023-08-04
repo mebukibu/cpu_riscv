@@ -55,6 +55,16 @@ def hexgen(data):
             | (regs[line[1]] << 7) \
             | (regs[line[2]] << 15) \
             | (int(line[3]) << 20)
+    elif line[0] == 'beq' or line[0] == 'bne'  or line[0] == 'blt'  or \
+         line[0] == 'bge' or line[0] == 'bltu' or line[0] == 'bgeu' :
+      imm = format(int(line[3]), '013b')
+      inst = insts[line[0]] \
+            | (regs[line[1]] << 15) \
+            | (regs[line[2]] << 20) \
+            | (int(imm[2], 2) << 7) \
+            | (int(imm[9:12], 2) << 8) \
+            | (int(imm[3:8], 2) << 25) \
+            | (int(imm[1], 2) << 31)
     elif line[0][0:2] == '0x':
       inst = int(line[0][2:], 16)
     
