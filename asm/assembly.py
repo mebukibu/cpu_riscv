@@ -41,14 +41,16 @@ def hexgen(data):
             | (int(imm[0:7], 2) << 25)
     elif line[0] == 'add' or line[0] == 'sub' or \
          line[0] == 'and' or line[0] == 'or'  or line[0] == 'xor' or \
-         line[0] == 'sll' or line[0] == 'srl' or line[0] == 'sra' :
+         line[0] == 'sll' or line[0] == 'srl' or line[0] == 'sra' or \
+         line[0] == 'slt' or line[0] == 'sltu' :
       inst = insts[line[0]] \
             | (regs[line[1]] << 7) \
             | (regs[line[2]] << 15) \
             | (regs[line[3]] << 20)
     elif line[0] == 'addi' or \
          line[0] == 'andi' or line[0] == 'ori'  or line[0] == 'xori' or \
-         line[0] == 'slli' or line[0] == 'srli' or line[0] == 'srai':
+         line[0] == 'slli' or line[0] == 'srli' or line[0] == 'srai' or \
+         line[0] == 'slti' or line[0] == 'sltiu' :
       inst = insts[line[0]] \
             | (regs[line[1]] << 7) \
             | (regs[line[2]] << 15) \
