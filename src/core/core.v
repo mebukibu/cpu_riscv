@@ -193,8 +193,8 @@ module core (
         `ALU_SLL  : alu_out <= op1_data << op2_data[4:0];
         `ALU_SRL  : alu_out <= op1_data >> op2_data[4:0];
         `ALU_SRA  : alu_out <= $signed(op1_data) >>> op2_data[4:0];
-        `ALU_SLT  : alu_out <= op1_data < op2_data;
-        `ALU_SLTU : alu_out <= $signed(op1_data) < $signed(op2_data);
+        `ALU_SLT  : alu_out <= $signed(op1_data) < $signed(op2_data);
+        `ALU_SLTU : alu_out <= op1_data < op2_data;
         default  : alu_out <= `WORD_LEN'b0;
       endcase
       case (exe_fun)
