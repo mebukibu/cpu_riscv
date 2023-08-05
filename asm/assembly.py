@@ -25,7 +25,8 @@ def fileload(name):
 def hexgen(data):
   hex = []
   for line in data:
-    if line[0] == 'lw':
+    if line[0] == 'lw' or \
+       line[0] == 'jalr':
       arg2 = re.split(r'[()]', line[2])
       imm = format(int(arg2[0]) & 0xfff, '012b')
       inst = insts[line[0]] \
@@ -62,13 +63,20 @@ def hexgen(data):
     elif line[0] == 'beq' or line[0] == 'bne'  or line[0] == 'blt'  or \
          line[0] == 'bge' or line[0] == 'bltu' or line[0] == 'bgeu' :
       imm = format(int(line[3]) & 0xffff, '013b')[-13:]
-      print(imm)
       inst = insts[line[0]] \
             | (regs[line[1]] << 15) \
             | (regs[line[2]] << 20) \
             | (int(imm[1], 2) << 7) \
             | (int(imm[8:12], 2) << 8) \
             | (int(imm[2:8], 2) << 25) \
+            | (int(imm[0], 2) << 31)
+    elif line[0] == 'jal':
+      imm = format(int(line[2]) & 0xffffff, '021b')[-21:]
+      inst = insts[line[0]] \
+            | (regs[line[1]] << 7) \
+            | (int(imm[1:9], 2) << 12) \
+            | (int(imm[9], 2) << 20) \
+            | (int(imm[10:20], 2) << 21) \
             | (int(imm[0], 2) << 31)
     elif line[0][0:2] == '0x':
       inst = int(line[0][2:], 16)
