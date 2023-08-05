@@ -48,10 +48,12 @@ module core (
   wire [`WORD_LEN-1:0] imm_b_sext;
   wire [19:0] imm_j;
   wire [`WORD_LEN-1:0] imm_j_sext;
+  wire [19:0] imm_u;
+  wire [`WORD_LEN-1:0] imm_u_shifted;
 
   wire [`WORD_LEN-1:0] inst_masked_isb;
   wire [`WORD_LEN-1:0] inst_masked_r;
-  wire [`WORD_LEN-1:0] inst_masked_j;
+  wire [`WORD_LEN-1:0] inst_masked_uj;
 
   reg [`EXE_FUN_LEN-1:0] exe_fun;
   reg [`OP1_LEN-1:0] op1_sel;
@@ -97,7 +99,7 @@ module core (
 
   assign addr_i = pc_reg;
   assign pc_plus4 = pc_reg + `WORD_LEN'h4;
-  assign jmp_flg = (inst_masked_j == `JAL | inst_masked_isb == `JALR);
+  assign jmp_flg = (inst_masked_uj == `JAL | inst_masked_isb == `JALR);
 
   assign pc_next = br_flg  ? br_target : `WORD_LEN'bZ;
   assign pc_next = jmp_flg ? alu_out : `WORD_LEN'bZ;
@@ -126,10 +128,12 @@ module core (
   assign imm_b_sext = {{19{imm_b[11]}}, imm_b, 1'b0};
   assign imm_j = {inst[31], inst[19:12], inst[20], inst[30:21]};
   assign imm_j_sext = {{11{imm_j[19]}}, imm_j, 1'b0};
+  assign imm_u = inst[31:12];
+  assign imm_u_shifted = {imm_u, 12'b0};
 
   assign inst_masked_isb = inst & `TYPE_ISB;
   assign inst_masked_r = inst & `TYPE_R;
-  assign inst_masked_j = inst & `TYPE_UJ;
+  assign inst_masked_uj = inst & `TYPE_UJ;
 
   always @(posedge clk, negedge rst_n) begin
     if (!rst_n) begin
@@ -173,9 +177,11 @@ module core (
           `SLT  : begin exe_fun <= `ALU_SLT;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
           `SLTU : begin exe_fun <= `ALU_SLTU; op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
           default:
-          case (inst_masked_j)
-            `JAL   : begin exe_fun <= `ALU_ADD; op1_sel <= `OP1_PC;  op2_sel <= `OP2_IMJ; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_PC; end
-            default: begin exe_fun <= `ALU_X;   op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_X; wb_sel <= `WB_X ; end
+          case (inst_masked_uj)
+            `JAL   : begin exe_fun <= `ALU_ADD; op1_sel <= `OP1_PC;  op2_sel <= `OP2_IMJ; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_PC;  end
+            `LUI   : begin exe_fun <= `ALU_ADD; op1_sel <= `OP1_X;   op2_sel <= `OP2_IMU; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
+            `AUIPC : begin exe_fun <= `ALU_ADD; op1_sel <= `OP1_PC;  op2_sel <= `OP2_IMU; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
+            default: begin exe_fun <= `ALU_X;   op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_X; wb_sel <= `WB_X;   end
           endcase
         endcase
       endcase
@@ -184,11 +190,13 @@ module core (
 
   assign op1_data = (op1_sel == `OP1_RS1) ? rs1_data : `WORD_LEN'bZ;
   assign op1_data = (op1_sel == `OP1_PC)  ? pc_reg : `WORD_LEN'bZ;
+  assign op1_data = (op1_sel == `OP1_X)   ? `WORD_LEN'b0 : `WORD_LEN'bZ;
 
   assign op2_data = (op2_sel == `OP2_RS2) ? rs2_data : `WORD_LEN'bZ;
   assign op2_data = (op2_sel == `OP2_IMI) ? imm_i_sext : `WORD_LEN'bZ;
   assign op2_data = (op2_sel == `OP2_IMS) ? imm_s_sext : `WORD_LEN'bZ;
   assign op2_data = (op2_sel == `OP2_IMJ) ? imm_j_sext : `WORD_LEN'bZ;
+  assign op2_data = (op2_sel == `OP2_IMU) ? imm_u_shifted : `WORD_LEN'bZ;
 
 
   //**********************************

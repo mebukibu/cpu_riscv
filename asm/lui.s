@@ -1,0 +1,9 @@
+jal x0, 8
+jalr x0, 0(x1)
+lw x6, 4(x0)
+lui x7, 8192
+sw x6, 0(x7)
+jalr x1, 0(x7)
+auipc x8, 8192
+jalr x1, -24(x8)
+jal x0, -32

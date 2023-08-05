@@ -78,6 +78,11 @@ def hexgen(data):
             | (int(imm[9], 2) << 20) \
             | (int(imm[10:20], 2) << 21) \
             | (int(imm[0], 2) << 31)
+    elif line[0] == 'lui' or line[0] == 'auipc':
+      imm = format(int(line[2]) & 0xffffffff, '032b')
+      inst = insts[line[0]] \
+            | (regs[line[1]] << 7) \
+            | (int(imm[0:20], 2) << 12)
     elif line[0][0:2] == '0x':
       inst = int(line[0][2:], 16)
     
