@@ -86,7 +86,8 @@
 `define CSR_V         `CSR_LEN'd5
 
 // CSR address
-`define CSR_ADDR_MS   `CSR_ADDR_LEN'h300
-`define CSR_ADDR_MTVBS`CSR_ADDR_LEN'h305
-`define CSR_ADDR_MEPC `CSR_ADDR_LEN'h341
-`define CSR_ADDR_MC   `CSR_ADDR_LEN'h342
+`define CSR_ADDR_X    `CSR_ADDR_LEN'h0
+`define CSR_ADDR_MS   `CSR_ADDR_LEN'h1
+`define CSR_ADDR_MTVBS`CSR_ADDR_LEN'h2
+`define CSR_ADDR_MEPC `CSR_ADDR_LEN'h3
+`define CSR_ADDR_MC   `CSR_ADDR_LEN'h4

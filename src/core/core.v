@@ -264,12 +264,12 @@ module core (
   assign wen = (state == `MEM) & (|mem_wen);
   assign wdata = rs2_data;
 
-  assign csr_addr =  (inst[31:20] == `CSR_ADDR_MS)    ? `CSR_ADDR_LEN'h1 : `CSR_ADDR_LEN'bZ;
-  assign csr_addr =  (inst[31:20] == `CSR_ADDR_MTVBS) ? `CSR_ADDR_LEN'h2 : `CSR_ADDR_LEN'bZ;
-  assign csr_addr =  (inst[31:20] == `CSR_ADDR_MEPC)  ? `CSR_ADDR_LEN'h3 : `CSR_ADDR_LEN'bZ;
-  assign csr_addr =  (inst[31:20] == `CSR_ADDR_MC)    ? `CSR_ADDR_LEN'h4 : `CSR_ADDR_LEN'bZ;
-  assign csr_addr = !(inst[31:20] == `CSR_ADDR_MS   | inst[31:20] == `CSR_ADDR_MTVBS | 
-                      inst[31:20] == `CSR_ADDR_MEPC | inst[31:20] == `CSR_ADDR_MC) ? `CSR_ADDR_LEN'h0 : `CSR_ADDR_LEN'bZ;
+  assign csr_addr =  (inst[31:20] == `CSR_ADDR_LEN'h300) ? `CSR_ADDR_MS    : `CSR_ADDR_LEN'bZ;
+  assign csr_addr =  (inst[31:20] == `CSR_ADDR_LEN'h305) ? `CSR_ADDR_MTVBS : `CSR_ADDR_LEN'bZ;
+  assign csr_addr =  (inst[31:20] == `CSR_ADDR_LEN'h341) ? `CSR_ADDR_MEPC  : `CSR_ADDR_LEN'bZ;
+  assign csr_addr =  (inst[31:20] == `CSR_ADDR_LEN'h342) ? `CSR_ADDR_MC    : `CSR_ADDR_LEN'bZ;
+  assign csr_addr = !(inst[31:20] == `CSR_ADDR_LEN'h300 | inst[31:20] == `CSR_ADDR_LEN'h305 | 
+                      inst[31:20] == `CSR_ADDR_LEN'h341 | inst[31:20] == `CSR_ADDR_LEN'h342) ? `CSR_ADDR_X : `CSR_ADDR_LEN'bZ;
 
   assign csr_rdata = csr_regfile[csr_addr];
 
