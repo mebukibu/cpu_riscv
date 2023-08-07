@@ -16,7 +16,7 @@ module top_tb ();
     rst_n = 0; #20;
     rst_n = 1; #5;
 
-    for (i = 0; i < 7; i = i + 1) begin
+    for (i = 0; i < 10; i = i + 1) begin
       #45;
       $display("pc_reg    : 0x%h", top_tb.top0.core0.pc_reg);
       $display("inst      : 0x%h", top_tb.top0.core0.inst);

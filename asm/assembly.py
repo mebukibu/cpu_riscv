@@ -98,6 +98,8 @@ def hexgen(data):
             | (regs[line[1]] << 7) \
             | (int(imm, 2) << 15) \
             | (int(line[2], 16) << 20)
+    elif line[0] == 'ecall':
+      inst = insts[line[0]]
     elif line[0][0:2] == '0x':
       inst = int(line[0][2:], 16)
     

@@ -112,7 +112,8 @@ module core (
 
   assign pc_next = br_flg  ? br_target : `WORD_LEN'bZ;
   assign pc_next = jmp_flg ? alu_out : `WORD_LEN'bZ;
-  assign pc_next = !(br_flg | jmp_flg) ? pc_plus4 : `WORD_LEN'bZ;
+  assign pc_next = (inst == `ECALL) ? csr_regfile[`CSR_ADDR_MTVBS] : `WORD_LEN'bZ;
+  assign pc_next = !(br_flg | jmp_flg | inst == `ECALL) ? pc_plus4 : `WORD_LEN'bZ;
 
   always @(posedge clk, negedge rst_n) begin
     if (!rst_n) pc_reg <= `START_ADDR;
@@ -178,6 +179,7 @@ module core (
         `CSRRSI : begin exe_fun <= `ALU_COPY1; op1_sel <= `OP1_IMZ; op2_sel <= `OP2_X;   mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_CSR; csr_cmd <= `CSR_S; end
         `CSRRC  : begin exe_fun <= `ALU_COPY1; op1_sel <= `OP1_RS1; op2_sel <= `OP2_X;   mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_CSR; csr_cmd <= `CSR_C; end
         `CSRRCI : begin exe_fun <= `ALU_COPY1; op1_sel <= `OP1_IMZ; op2_sel <= `OP2_X;   mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_CSR; csr_cmd <= `CSR_C; end
+        `ECALL  : begin exe_fun <= `ALU_X;     op1_sel <= `OP1_X;   op2_sel <= `OP2_X;   mem_wen <= `MEM_X; rf_wen <= `REN_X; wb_sel <= `WB_X;   csr_cmd <= `CSR_E; end
         default:
         case (inst_masked_r)
           `ADD  : begin exe_fun <= `ALU_ADD;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; csr_cmd <= `CSR_X; end
@@ -267,15 +269,16 @@ module core (
   assign csr_addr =  (inst[31:20] == `CSR_ADDR_LEN'h300) ? `CSR_ADDR_MS    : `CSR_ADDR_LEN'bZ;
   assign csr_addr =  (inst[31:20] == `CSR_ADDR_LEN'h305) ? `CSR_ADDR_MTVBS : `CSR_ADDR_LEN'bZ;
   assign csr_addr =  (inst[31:20] == `CSR_ADDR_LEN'h341) ? `CSR_ADDR_MEPC  : `CSR_ADDR_LEN'bZ;
-  assign csr_addr =  (inst[31:20] == `CSR_ADDR_LEN'h342) ? `CSR_ADDR_MC    : `CSR_ADDR_LEN'bZ;
-  assign csr_addr = !(inst[31:20] == `CSR_ADDR_LEN'h300 | inst[31:20] == `CSR_ADDR_LEN'h305 | 
-                      inst[31:20] == `CSR_ADDR_LEN'h341 | inst[31:20] == `CSR_ADDR_LEN'h342) ? `CSR_ADDR_X : `CSR_ADDR_LEN'bZ;
+  assign csr_addr =  (inst[31:20] == `CSR_ADDR_LEN'h342 | csr_cmd == `CSR_E) ? `CSR_ADDR_MC    : `CSR_ADDR_LEN'bZ;
+  assign csr_addr = !(inst[31:20] == `CSR_ADDR_LEN'h300 | inst[31:20] == `CSR_ADDR_LEN'h305 |
+                      inst[31:20] == `CSR_ADDR_LEN'h341 | inst[31:20] == `CSR_ADDR_LEN'h342 | csr_cmd == `CSR_E) ? `CSR_ADDR_X : `CSR_ADDR_LEN'bZ;
 
   assign csr_rdata = csr_regfile[csr_addr];
 
   assign csr_wdata = (csr_cmd == `CSR_W) ?  op1_data : `WORD_LEN'bZ;
   assign csr_wdata = (csr_cmd == `CSR_S) ? (csr_rdata | op1_data) : `WORD_LEN'bZ;
   assign csr_wdata = (csr_cmd == `CSR_C) ? (csr_rdata & ~op1_data) : `WORD_LEN'bZ;
+  assign csr_wdata = (csr_cmd == `CSR_E) ? `WORD_LEN'd11 : `WORD_LEN'bZ;
 
   always @(posedge clk, negedge rst_n) begin
     if (!rst_n) begin
