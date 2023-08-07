@@ -3,7 +3,8 @@
 module top (
   input wire clk,
   input wire rst_n,
-  output wire exit
+  output wire exit,
+  output wire [2:0] gp
 );
 
   wire [`WORD_LEN-1:0] addr_i;
@@ -12,11 +13,15 @@ module top (
   wire [`WORD_LEN-1:0] rdata;
   wire wen;
   wire [`WORD_LEN-1:0] wdata;
+  wire [`WORD_LEN-1:0] gp_core;
+  
+  assign gp = gp_core[2:0];
 
   core core0 (
     .clk(clk),
     .rst_n(rst_n),
     .exit(exit),
+    .gp(gp_core),
     // ImemPort
     .inst(inst),
     .addr_i(addr_i),

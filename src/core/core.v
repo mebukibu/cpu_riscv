@@ -12,6 +12,7 @@ module core (
   input wire clk,
   input wire rst_n,
   output wire exit,
+  output wire [`WORD_LEN-1:0] gp,
   // ImemPort
   input wire [`WORD_LEN-1:0] inst,
   output wire [`WORD_LEN-1:0] addr_i,
@@ -316,6 +317,7 @@ module core (
 
   //**********************************
   // Debug
-  assign exit = (inst == `WORD_LEN'h00000000);
+  assign exit = (pc_reg == `WORD_LEN'h44);
+  assign gp = regfile[3];
 
 endmodule
