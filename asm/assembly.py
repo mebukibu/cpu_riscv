@@ -3,7 +3,7 @@ import re
 
 import instructions
 
-output_dir = '../hex/'
+output_dir = '../hex/minitests/'
 insts = instructions.insts
 
 regs = {
