@@ -24,7 +24,7 @@ module memory #(
   end
 
   initial begin
-    $readmemh("C:/Users/masato/src/cpu_riscv/hex/lui.hex", mem);
+    $readmemh("C:/Users/masato/src/cpu_riscv/hex/csrrw.hex", mem);
   end
   
 endmodule

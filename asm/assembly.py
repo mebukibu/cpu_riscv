@@ -25,6 +25,7 @@ def fileload(name):
 def hexgen(data):
   hex = []
   for line in data:
+    inst = 0
     if line[0] == 'lw' or \
        line[0] == 'jalr':
       arg2 = re.split(r'[()]', line[2])
@@ -83,6 +84,20 @@ def hexgen(data):
       inst = insts[line[0]] \
             | (regs[line[1]] << 7) \
             | (int(imm[0:20], 2) << 12)
+    elif line[0] == 'csrrw' or line[0] == 'csrrs' or line[0] == 'csrrc':
+      inst = insts[line[0]] \
+            | (regs[line[1]] << 7) \
+            | (regs[line[3]] << 15) \
+            | (int(line[2], 16) << 20)
+    elif line[0] == 'csrrwi' or line[0] == 'csrrsi' or line[0] == 'csrrci':
+      if int(line[3]) < 0:
+        print('{} does not support negative immediates.'.format(line[0]))
+        exit(1)
+      imm = format(int(line[3]), '05b')[-5:]
+      inst = insts[line[0]] \
+            | (regs[line[1]] << 7) \
+            | (int(imm, 2) << 15) \
+            | (int(line[2], 16) << 20)
     elif line[0][0:2] == '0x':
       inst = int(line[0][2:], 16)
     

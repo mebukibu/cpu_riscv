@@ -24,6 +24,7 @@ module core (
 
   // register
   reg [`WORD_LEN-1:0] regfile [0:`WORD_LEN-1];
+  reg [`WORD_LEN-1:0] csr_regfile [0:4];
 
   // For IF
   reg [`WORD_LEN-1:0] pc_reg;
@@ -50,6 +51,8 @@ module core (
   wire [`WORD_LEN-1:0] imm_j_sext;
   wire [19:0] imm_u;
   wire [`WORD_LEN-1:0] imm_u_shifted;
+  wire [4:0] imm_z;
+  wire [`WORD_LEN-1:0] imm_z_uext;
 
   wire [`WORD_LEN-1:0] inst_masked_isb;
   wire [`WORD_LEN-1:0] inst_masked_r;
@@ -61,12 +64,18 @@ module core (
   reg [`MEM_LEN-1:0] mem_wen;
   reg [`REN_LEN-1:0] rf_wen;
   reg [`WB_SEL_LEN-1:0] wb_sel;
+  reg [`CSR_LEN-1:0] csr_cmd;
 
   wire [`WORD_LEN-1:0] op1_data;
   wire [`WORD_LEN-1:0] op2_data;
 
   // For EX
   reg [`WORD_LEN-1:0] alu_out;
+
+  // For MEM
+  wire [`CSR_ADDR_LEN-1:0] csr_addr;
+  wire [`WORD_LEN-1:0] csr_rdata;
+  wire [`WORD_LEN-1:0] csr_wdata;
 
   // For WB
   integer i;
@@ -130,6 +139,8 @@ module core (
   assign imm_j_sext = {{11{imm_j[19]}}, imm_j, 1'b0};
   assign imm_u = inst[31:12];
   assign imm_u_shifted = {imm_u, 12'b0};
+  assign imm_z = inst[19:15];
+  assign imm_z_uext = {27'b0, imm_z};
 
   assign inst_masked_isb = inst & `TYPE_ISB;
   assign inst_masked_r = inst & `TYPE_R;
@@ -146,42 +157,48 @@ module core (
     end
     else if (state == `ID) begin
       case (inst_masked_isb)
-        `LW    : begin exe_fun <= `ALU_ADD;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMI; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_MEM; end
-        `SW    : begin exe_fun <= `ALU_ADD;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMS; mem_wen <= `MEM_S; rf_wen <= `REN_X; wb_sel <= `WB_X  ; end
-        `ADDI  : begin exe_fun <= `ALU_ADD;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMI; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
-        `ANDI  : begin exe_fun <= `ALU_AND;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMI; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
-        `ORI   : begin exe_fun <= `ALU_OR;   op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMI; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
-        `XORI  : begin exe_fun <= `ALU_XOR;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMI; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
-        `SLTI  : begin exe_fun <= `ALU_SLT;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMI; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
-        `SLTIU : begin exe_fun <= `ALU_SLTU; op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMI; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
-        `BEQ   : begin exe_fun <= `BR_BEQ;   op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_X; wb_sel <= `WB_X;   end
-        `BNE   : begin exe_fun <= `BR_BNE;   op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_X; wb_sel <= `WB_X;   end
-        `BLT   : begin exe_fun <= `BR_BLT;   op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_X; wb_sel <= `WB_X;   end
-        `BGE   : begin exe_fun <= `BR_BGE;   op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_X; wb_sel <= `WB_X;   end
-        `BLTU  : begin exe_fun <= `BR_BLTU;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_X; wb_sel <= `WB_X;   end
-        `BGEU  : begin exe_fun <= `BR_BGEU;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_X; wb_sel <= `WB_X;   end
-        `JALR  : begin exe_fun <= `ALU_JALR; op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMI; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_PC ; end
+        `LW     : begin exe_fun <= `ALU_ADD;   op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMI; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_MEM; csr_cmd <= `CSR_X; end
+        `SW     : begin exe_fun <= `ALU_ADD;   op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMS; mem_wen <= `MEM_S; rf_wen <= `REN_X; wb_sel <= `WB_X  ; csr_cmd <= `CSR_X; end
+        `ADDI   : begin exe_fun <= `ALU_ADD;   op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMI; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; csr_cmd <= `CSR_X; end
+        `ANDI   : begin exe_fun <= `ALU_AND;   op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMI; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; csr_cmd <= `CSR_X; end
+        `ORI    : begin exe_fun <= `ALU_OR;    op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMI; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; csr_cmd <= `CSR_X; end
+        `XORI   : begin exe_fun <= `ALU_XOR;   op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMI; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; csr_cmd <= `CSR_X; end
+        `SLTI   : begin exe_fun <= `ALU_SLT;   op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMI; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; csr_cmd <= `CSR_X; end
+        `SLTIU  : begin exe_fun <= `ALU_SLTU;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMI; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; csr_cmd <= `CSR_X; end
+        `BEQ    : begin exe_fun <= `BR_BEQ;    op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_X; wb_sel <= `WB_X;   csr_cmd <= `CSR_X; end
+        `BNE    : begin exe_fun <= `BR_BNE;    op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_X; wb_sel <= `WB_X;   csr_cmd <= `CSR_X; end
+        `BLT    : begin exe_fun <= `BR_BLT;    op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_X; wb_sel <= `WB_X;   csr_cmd <= `CSR_X; end
+        `BGE    : begin exe_fun <= `BR_BGE;    op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_X; wb_sel <= `WB_X;   csr_cmd <= `CSR_X; end
+        `BLTU   : begin exe_fun <= `BR_BLTU;   op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_X; wb_sel <= `WB_X;   csr_cmd <= `CSR_X; end
+        `BGEU   : begin exe_fun <= `BR_BGEU;   op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_X; wb_sel <= `WB_X;   csr_cmd <= `CSR_X; end
+        `JALR   : begin exe_fun <= `ALU_JALR;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMI; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_PC;  csr_cmd <= `CSR_X; end
+        `CSRRW  : begin exe_fun <= `ALU_COPY1; op1_sel <= `OP1_RS1; op2_sel <= `OP2_X;   mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_CSR; csr_cmd <= `CSR_W; end
+        `CSRRWI : begin exe_fun <= `ALU_COPY1; op1_sel <= `OP1_IMZ; op2_sel <= `OP2_X;   mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_CSR; csr_cmd <= `CSR_W; end
+        `CSRRS  : begin exe_fun <= `ALU_COPY1; op1_sel <= `OP1_RS1; op2_sel <= `OP2_X;   mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_CSR; csr_cmd <= `CSR_S; end
+        `CSRRSI : begin exe_fun <= `ALU_COPY1; op1_sel <= `OP1_IMZ; op2_sel <= `OP2_X;   mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_CSR; csr_cmd <= `CSR_S; end
+        `CSRRC  : begin exe_fun <= `ALU_COPY1; op1_sel <= `OP1_RS1; op2_sel <= `OP2_X;   mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_CSR; csr_cmd <= `CSR_C; end
+        `CSRRCI : begin exe_fun <= `ALU_COPY1; op1_sel <= `OP1_IMZ; op2_sel <= `OP2_X;   mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_CSR; csr_cmd <= `CSR_C; end
         default:
         case (inst_masked_r)
-          `ADD  : begin exe_fun <= `ALU_ADD;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
-          `SUB  : begin exe_fun <= `ALU_SUB;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
-          `AND  : begin exe_fun <= `ALU_AND;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
-          `OR   : begin exe_fun <= `ALU_OR;   op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
-          `XOR  : begin exe_fun <= `ALU_XOR;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
-          `SLL  : begin exe_fun <= `ALU_SLL;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
-          `SRL  : begin exe_fun <= `ALU_SRL;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
-          `SRA  : begin exe_fun <= `ALU_SRA;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
-          `SLLI : begin exe_fun <= `ALU_SLL;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMI; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
-          `SRLI : begin exe_fun <= `ALU_SRL;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMI; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
-          `SRAI : begin exe_fun <= `ALU_SRA;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMI; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
-          `SLT  : begin exe_fun <= `ALU_SLT;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
-          `SLTU : begin exe_fun <= `ALU_SLTU; op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
+          `ADD  : begin exe_fun <= `ALU_ADD;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; csr_cmd <= `CSR_X; end
+          `SUB  : begin exe_fun <= `ALU_SUB;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; csr_cmd <= `CSR_X; end
+          `AND  : begin exe_fun <= `ALU_AND;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; csr_cmd <= `CSR_X; end
+          `OR   : begin exe_fun <= `ALU_OR;   op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; csr_cmd <= `CSR_X; end
+          `XOR  : begin exe_fun <= `ALU_XOR;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; csr_cmd <= `CSR_X; end
+          `SLL  : begin exe_fun <= `ALU_SLL;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; csr_cmd <= `CSR_X; end
+          `SRL  : begin exe_fun <= `ALU_SRL;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; csr_cmd <= `CSR_X; end
+          `SRA  : begin exe_fun <= `ALU_SRA;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; csr_cmd <= `CSR_X; end
+          `SLLI : begin exe_fun <= `ALU_SLL;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMI; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; csr_cmd <= `CSR_X; end
+          `SRLI : begin exe_fun <= `ALU_SRL;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMI; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; csr_cmd <= `CSR_X; end
+          `SRAI : begin exe_fun <= `ALU_SRA;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMI; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; csr_cmd <= `CSR_X; end
+          `SLT  : begin exe_fun <= `ALU_SLT;  op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; csr_cmd <= `CSR_X; end
+          `SLTU : begin exe_fun <= `ALU_SLTU; op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; csr_cmd <= `CSR_X; end
           default:
           case (inst_masked_uj)
-            `JAL   : begin exe_fun <= `ALU_ADD; op1_sel <= `OP1_PC;  op2_sel <= `OP2_IMJ; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_PC;  end
-            `LUI   : begin exe_fun <= `ALU_ADD; op1_sel <= `OP1_X;   op2_sel <= `OP2_IMU; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
-            `AUIPC : begin exe_fun <= `ALU_ADD; op1_sel <= `OP1_PC;  op2_sel <= `OP2_IMU; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; end
-            default: begin exe_fun <= `ALU_X;   op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_X; wb_sel <= `WB_X;   end
+            `JAL   : begin exe_fun <= `ALU_ADD; op1_sel <= `OP1_PC;  op2_sel <= `OP2_IMJ; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_PC;  csr_cmd <= `CSR_X; end
+            `LUI   : begin exe_fun <= `ALU_ADD; op1_sel <= `OP1_X;   op2_sel <= `OP2_IMU; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; csr_cmd <= `CSR_X; end
+            `AUIPC : begin exe_fun <= `ALU_ADD; op1_sel <= `OP1_PC;  op2_sel <= `OP2_IMU; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; csr_cmd <= `CSR_X; end
+            default: begin exe_fun <= `ALU_X;   op1_sel <= `OP1_RS1; op2_sel <= `OP2_RS2; mem_wen <= `MEM_X; rf_wen <= `REN_X; wb_sel <= `WB_X;   csr_cmd <= `CSR_X; end
           endcase
         endcase
       endcase
@@ -190,6 +207,7 @@ module core (
 
   assign op1_data = (op1_sel == `OP1_RS1) ? rs1_data : `WORD_LEN'bZ;
   assign op1_data = (op1_sel == `OP1_PC)  ? pc_reg : `WORD_LEN'bZ;
+  assign op1_data = (op1_sel == `OP1_IMZ) ? imm_z_uext : `WORD_LEN'bZ;
   assign op1_data = (op1_sel == `OP1_X)   ? `WORD_LEN'b0 : `WORD_LEN'bZ;
 
   assign op2_data = (op2_sel == `OP2_RS2) ? rs2_data : `WORD_LEN'bZ;
@@ -210,17 +228,18 @@ module core (
     end
     else if (state == `EX) begin
       case (exe_fun)
-        `ALU_ADD  : alu_out <= op1_data + op2_data;
-        `ALU_SUB  : alu_out <= op1_data - op2_data;
-        `ALU_AND  : alu_out <= op1_data & op2_data;
-        `ALU_OR   : alu_out <= op1_data | op2_data;
-        `ALU_XOR  : alu_out <= op1_data ^ op2_data;
-        `ALU_SLL  : alu_out <= op1_data << op2_data[4:0];
-        `ALU_SRL  : alu_out <= op1_data >> op2_data[4:0];
-        `ALU_SRA  : alu_out <= $signed(op1_data) >>> op2_data[4:0];
-        `ALU_SLT  : alu_out <= $signed(op1_data) < $signed(op2_data);
-        `ALU_SLTU : alu_out <= op1_data < op2_data;
-        `ALU_JALR : alu_out <= (op1_data + op2_data) & ~(`WORD_LEN'b1);
+        `ALU_ADD   : alu_out <= op1_data + op2_data;
+        `ALU_SUB   : alu_out <= op1_data - op2_data;
+        `ALU_AND   : alu_out <= op1_data & op2_data;
+        `ALU_OR    : alu_out <= op1_data | op2_data;
+        `ALU_XOR   : alu_out <= op1_data ^ op2_data;
+        `ALU_SLL   : alu_out <= op1_data << op2_data[4:0];
+        `ALU_SRL   : alu_out <= op1_data >> op2_data[4:0];
+        `ALU_SRA   : alu_out <= $signed(op1_data) >>> op2_data[4:0];
+        `ALU_SLT   : alu_out <= $signed(op1_data) < $signed(op2_data);
+        `ALU_SLTU  : alu_out <= op1_data < op2_data;
+        `ALU_JALR  : alu_out <= (op1_data + op2_data) & ~(`WORD_LEN'b1);
+        `ALU_COPY1 : alu_out <= op1_data;
         default  : alu_out <= `WORD_LEN'b0;
       endcase
       case (exe_fun)
@@ -245,13 +264,39 @@ module core (
   assign wen = (state == `MEM) & (|mem_wen);
   assign wdata = rs2_data;
 
+  assign csr_addr =  (inst[31:20] == `CSR_ADDR_MS)    ? `CSR_ADDR_LEN'h1 : `CSR_ADDR_LEN'bZ;
+  assign csr_addr =  (inst[31:20] == `CSR_ADDR_MTVBS) ? `CSR_ADDR_LEN'h2 : `CSR_ADDR_LEN'bZ;
+  assign csr_addr =  (inst[31:20] == `CSR_ADDR_MEPC)  ? `CSR_ADDR_LEN'h3 : `CSR_ADDR_LEN'bZ;
+  assign csr_addr =  (inst[31:20] == `CSR_ADDR_MC)    ? `CSR_ADDR_LEN'h4 : `CSR_ADDR_LEN'bZ;
+  assign csr_addr = !(inst[31:20] == `CSR_ADDR_MS   | inst[31:20] == `CSR_ADDR_MTVBS | 
+                      inst[31:20] == `CSR_ADDR_MEPC | inst[31:20] == `CSR_ADDR_MC) ? `CSR_ADDR_LEN'h0 : `CSR_ADDR_LEN'bZ;
+
+  assign csr_rdata = csr_regfile[csr_addr];
+
+  assign csr_wdata = (csr_cmd == `CSR_W) ?  op1_data : `WORD_LEN'bZ;
+  assign csr_wdata = (csr_cmd == `CSR_S) ? (csr_rdata | op1_data) : `WORD_LEN'bZ;
+  assign csr_wdata = (csr_cmd == `CSR_C) ? (csr_rdata & ~op1_data) : `WORD_LEN'bZ;
+
+  always @(posedge clk, negedge rst_n) begin
+    if (!rst_n) begin
+      for (i = 0; i < 4096; i = i + 1) begin
+        csr_regfile[i] <= `WORD_LEN'b0;
+      end
+    end
+    else if (state == `MEM) begin
+      if (csr_cmd > `CSR_LEN'b0)
+        csr_regfile[csr_addr] <= csr_wdata;
+    end
+  end
+
 
   //**********************************
   // Writeback (WB) Stage
 
   assign wb_data =  (wb_sel == `WB_MEM) ? rdata : `WORD_LEN'bZ;
   assign wb_data =  (wb_sel == `WB_PC ) ? pc_plus4 : `WORD_LEN'bZ;
-  assign wb_data = !(wb_sel == `WB_MEM | wb_sel == `WB_PC) ? alu_out : `WORD_LEN'bZ;
+  assign wb_data =  (wb_sel == `WB_CSR) ? csr_rdata : `WORD_LEN'bZ;
+  assign wb_data = !(wb_sel == `WB_MEM | wb_sel == `WB_PC | wb_sel == `WB_CSR) ? alu_out : `WORD_LEN'bZ;
 
   always @(posedge clk, negedge rst_n) begin
     if (!rst_n) begin
