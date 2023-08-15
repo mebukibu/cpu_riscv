@@ -18,13 +18,13 @@ module memory #(
   reg [`WORD_LEN-1:0] mem [0:depth-1];
 
   always @(posedge clk) begin
-    inst <= mem[addr_i[`WORD_LEN-1:2]];
-    rdata <= mem[addr_d[`WORD_LEN-1:2]];
-    if (wen) mem[addr_d[`WORD_LEN-1:2]] <= wdata;
+    inst <= mem[addr_i[11:2]];
+    rdata <= mem[addr_d[11:2]];
+    if (wen) mem[addr_d[11:2]] <= wdata;
   end
 
   initial begin
-    $readmemh("C:/Users/masato/src/cpu_riscv/hex/riscv-tests/rv32ui-p-add.hex", mem);
+    $readmemh("/home/masato/src/cpu_riscv/hex/minitests/ctest.hex", mem);
   end
   
 endmodule

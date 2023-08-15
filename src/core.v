@@ -270,7 +270,7 @@ module core (
   assign csr_addr =  (inst[31:20] == `CSR_ADDR_LEN'h300) ? `CSR_ADDR_MS    : `CSR_ADDR_LEN'bZ;
   assign csr_addr =  (inst[31:20] == `CSR_ADDR_LEN'h305) ? `CSR_ADDR_MTVBS : `CSR_ADDR_LEN'bZ;
   assign csr_addr =  (inst[31:20] == `CSR_ADDR_LEN'h341) ? `CSR_ADDR_MEPC  : `CSR_ADDR_LEN'bZ;
-  assign csr_addr =  (inst[31:20] == `CSR_ADDR_LEN'h342 | csr_cmd == `CSR_E) ? `CSR_ADDR_MC    : `CSR_ADDR_LEN'bZ;
+  assign csr_addr =  (inst[31:20] == `CSR_ADDR_LEN'h342 | csr_cmd == `CSR_E) ? `CSR_ADDR_MC : `CSR_ADDR_LEN'bZ;
   assign csr_addr = !(inst[31:20] == `CSR_ADDR_LEN'h300 | inst[31:20] == `CSR_ADDR_LEN'h305 |
                       inst[31:20] == `CSR_ADDR_LEN'h341 | inst[31:20] == `CSR_ADDR_LEN'h342 | csr_cmd == `CSR_E) ? `CSR_ADDR_X : `CSR_ADDR_LEN'bZ;
 
@@ -317,7 +317,7 @@ module core (
 
   //**********************************
   // Debug
-  assign exit = (pc_reg == `WORD_LEN'h44);
+  assign exit = (inst == `UNIMP);
   assign gp = regfile[3];
 
 endmodule

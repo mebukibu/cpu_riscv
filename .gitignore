@@ -2,3 +2,7 @@
 a.out
 dump.vcd
 __pycache__
+
+*.o
+*.bin
+ctest
