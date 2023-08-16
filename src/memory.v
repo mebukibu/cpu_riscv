@@ -1,7 +1,8 @@
 `include "consts.vh"
 
 module memory #(
-  parameter integer depth = 4096
+  parameter integer awidth = 16,
+  parameter integer depth = 1 << awidth
 ) (
   input wire clk,
   // ImemPort
@@ -18,13 +19,13 @@ module memory #(
   reg [`WORD_LEN-1:0] mem [0:depth-1];
 
   always @(posedge clk) begin
-    inst <= mem[addr_i[11:2]];
-    rdata <= mem[addr_d[11:2]];
-    if (wen) mem[addr_d[11:2]] <= wdata;
+    inst <= mem[addr_i[awidth-1:2]];
+    rdata <= mem[addr_d[awidth-1:2]];
+    if (wen) mem[addr_d[awidth-1:2]] <= wdata;
   end
 
   initial begin
-    $readmemh("/home/masato/src/cpu_riscv/hex/minitests/ctest.hex", mem);
+    $readmemh("C:/Users/masato/src/cpu_riscv/hex/minitests/ctest.hex", mem);
   end
   
 endmodule
