@@ -26,7 +26,7 @@ def hexgen(data):
   hex = []
   for line in data:
     inst = 0
-    if line[0] == 'lw' or \
+    if line[0] == 'lw' or line[0] == 'lbu' or \
        line[0] == 'jalr':
       arg2 = re.split(r'[()]', line[2])
       imm = format(int(arg2[0]) & 0xfff, '012b')

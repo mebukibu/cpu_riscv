@@ -2,6 +2,7 @@
 
 // load, store
 `define LW      `WORD_LEN'b00000000000000000010000000000011     // type I
+`define LBU     `WORD_LEN'b00000000000000000100000000000011     // type I
 `define SW      `WORD_LEN'b00000000000000000010000000100011     // type S
 
 // add
