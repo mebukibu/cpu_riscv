@@ -48,11 +48,11 @@
 `define OP2_IMJ       `OP2_LEN'd4
 `define OP2_IMU       `OP2_LEN'd5
 
-
 `define MEM_LEN       2
 `define MEM_X         `MEM_LEN'd0
 `define MEM_S         `MEM_LEN'd1
 `define MEM_V         `MEM_LEN'd2
+`define MEM_U         `MEM_LEN'd3
 
 `define REN_LEN       2
 `define REN_X         `REN_LEN'd0
@@ -68,7 +68,7 @@
 `define WB_MEM_V      `WB_SEL_LEN'd4
 `define WB_ALU_V      `WB_SEL_LEN'd5
 `define WB_VL         `WB_SEL_LEN'd6
-`define WB_MEM_1U     `WB_SEL_LEN'd7
+`define WB_M1U        `WB_SEL_LEN'd7
 
 `define MW_LEN        3
 `define MW_X          `MW_LEN'd0
