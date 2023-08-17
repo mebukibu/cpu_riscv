@@ -160,7 +160,8 @@ module core (
     else if (state == `ID) begin
       case (inst_masked_isb)
         `LW     : begin exe_fun <= `ALU_ADD;   op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMI; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_MEM; csr_cmd <= `CSR_X; end
-        `LBU    : begin exe_fun <= `ALU_ADD;   op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMI; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_MEM_1U; csr_cmd <= `CSR_X; end
+        `LBU    : begin exe_fun <= `ALU_ADD;   op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMI; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_M1U; csr_cmd <= `CSR_X; end
+        `SB     : begin exe_fun <= `ALU_ADD;   op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMS; mem_wen <= `MEM_U; rf_wen <= `REN_X; wb_sel <= `WB_X  ; csr_cmd <= `CSR_X; end
         `SW     : begin exe_fun <= `ALU_ADD;   op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMS; mem_wen <= `MEM_S; rf_wen <= `REN_X; wb_sel <= `WB_X  ; csr_cmd <= `CSR_X; end
         `ADDI   : begin exe_fun <= `ALU_ADD;   op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMI; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; csr_cmd <= `CSR_X; end
         `ANDI   : begin exe_fun <= `ALU_AND;   op1_sel <= `OP1_RS1; op2_sel <= `OP2_IMI; mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_ALU; csr_cmd <= `CSR_X; end
@@ -265,8 +266,13 @@ module core (
 
   assign addr_d = alu_out;
 
-  assign wen = (state == `MEM) & (|mem_wen);
-  assign wdata = rs2_data;
+  assign wen = (state == `MEM | state == `WB) & (|mem_wen);
+  assign wdata = (mem_wen == `MEM_S) ? rs2_data : `WORD_LEN'bZ;
+
+  assign wdata = (mem_wen == `MEM_U & addr_d[1:0] == 2'b00) ? {rdata[31:8], rs2_data[7:0]} : `WORD_LEN'bZ;
+  assign wdata = (mem_wen == `MEM_U & addr_d[1:0] == 2'b01) ? {rdata[31:16], rs2_data[7:0], rdata[ 7:0]} : `WORD_LEN'bZ;
+  assign wdata = (mem_wen == `MEM_U & addr_d[1:0] == 2'b10) ? {rdata[31:24], rs2_data[7:0], rdata[15:0]} : `WORD_LEN'bZ;
+  assign wdata = (mem_wen == `MEM_U & addr_d[1:0] == 2'b11) ? {rs2_data[7:0], rdata[23:0]} : `WORD_LEN'bZ;
 
   assign csr_addr =  (inst[31:20] == `CSR_ADDR_LEN'h300) ? `CSR_ADDR_MS    : `CSR_ADDR_LEN'bZ;
   assign csr_addr =  (inst[31:20] == `CSR_ADDR_LEN'h305) ? `CSR_ADDR_MTVBS : `CSR_ADDR_LEN'bZ;
@@ -301,12 +307,12 @@ module core (
   assign wb_data =  (wb_sel == `WB_MEM) ? rdata : `WORD_LEN'bZ;
   assign wb_data =  (wb_sel == `WB_PC ) ? pc_plus4 : `WORD_LEN'bZ;
   assign wb_data =  (wb_sel == `WB_CSR) ? csr_rdata : `WORD_LEN'bZ;
-  assign wb_data = !(wb_sel == `WB_MEM | wb_sel == `WB_PC | wb_sel == `WB_CSR | wb_sel == `WB_MEM_1U) ? alu_out : `WORD_LEN'bZ;
+  assign wb_data = !(wb_sel == `WB_MEM | wb_sel == `WB_PC | wb_sel == `WB_CSR | wb_sel == `WB_M1U) ? alu_out : `WORD_LEN'bZ;
 
-  assign wb_data =  (wb_sel == `WB_MEM_1U & addr_d[1:0] == 2'b00) ? {24'b0, rdata[ 7: 0]} : `WORD_LEN'bZ;
-  assign wb_data =  (wb_sel == `WB_MEM_1U & addr_d[1:0] == 2'b01) ? {24'b0, rdata[15: 8]} : `WORD_LEN'bZ;
-  assign wb_data =  (wb_sel == `WB_MEM_1U & addr_d[1:0] == 2'b10) ? {24'b0, rdata[23:16]} : `WORD_LEN'bZ;
-  assign wb_data =  (wb_sel == `WB_MEM_1U & addr_d[1:0] == 2'b11) ? {24'b0, rdata[31:24]} : `WORD_LEN'bZ;
+  assign wb_data =  (wb_sel == `WB_M1U & addr_d[1:0] == 2'b00) ? {24'b0, rdata[ 7: 0]} : `WORD_LEN'bZ;
+  assign wb_data =  (wb_sel == `WB_M1U & addr_d[1:0] == 2'b01) ? {24'b0, rdata[15: 8]} : `WORD_LEN'bZ;
+  assign wb_data =  (wb_sel == `WB_M1U & addr_d[1:0] == 2'b10) ? {24'b0, rdata[23:16]} : `WORD_LEN'bZ;
+  assign wb_data =  (wb_sel == `WB_M1U & addr_d[1:0] == 2'b11) ? {24'b0, rdata[31:24]} : `WORD_LEN'bZ;
 
   always @(posedge clk, negedge rst_n) begin
     if (!rst_n) begin
