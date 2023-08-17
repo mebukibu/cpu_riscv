@@ -42,7 +42,6 @@ module uart (
       for (i = 0; i < `UART_LEN; i = i + 1) begin
         uart_regfile[i] <= `UART_LEN'b0;
       end
-      uart_regfile[`UART_LSR] <= `LSR_TX_IDLE;
     end
     else if (wen_mem & ((addr_d_mem & ~`WORD_LEN'b111) == `UART_ADDR)) begin
       case (addr_d_mem[2])

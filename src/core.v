@@ -11,8 +11,8 @@
 module core (
   input wire clk,
   input wire rst_n,
+  input wire intr,
   output wire exit,
-  output wire [`WORD_LEN-1:0] gp,
   // ImemPort
   input wire [`WORD_LEN-1:0] inst,
   output wire [`WORD_LEN-1:0] addr_i,
@@ -88,7 +88,7 @@ module core (
   reg [2:0] state;
   always @(posedge clk, negedge rst_n) begin
     if (!rst_n) state <= `IDLE;
-    else begin
+    else if (!intr) begin
       case (state)
         `IDLE   : state <= `IF;
         `IF     : state <= `ID;
@@ -330,6 +330,5 @@ module core (
   //**********************************
   // Debug
   assign exit = (inst == `UNIMP);
-  assign gp = regfile[3];
 
 endmodule
