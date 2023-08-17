@@ -1,5 +1,5 @@
 `define WORD_LEN      32
-`define START_ADDR    `WORD_LEN'h0000
+`define START_ADDR    `WORD_LEN'h8000
 `define BUBBLE        `WORD_LEN'h00000013
 `define UNIMP         `WORD_LEN'hc0001073
 `define ADDR_LEN      5
@@ -92,3 +92,12 @@
 `define CSR_ADDR_MTVBS`CSR_ADDR_LEN'h2
 `define CSR_ADDR_MEPC `CSR_ADDR_LEN'h3
 `define CSR_ADDR_MC   `CSR_ADDR_LEN'h4
+
+// UART consts
+`define UART_ADDR     `WORD_LEN'h1000
+`define UART_LEN      8
+`define UART_RHR      0
+`define UART_THR      0
+`define UART_LSR      5
+`define LSR_RX_READY  `UART_LEN'b00000001
+`define LSR_TX_IDLE   `UART_LEN'b00100000
