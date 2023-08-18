@@ -1,5 +1,5 @@
 `define WORD_LEN      32
-`define START_ADDR    `WORD_LEN'h0000
+`define START_ADDR    `WORD_LEN'h8000
 `define BUBBLE        `WORD_LEN'h00000013
 `define UNIMP         `WORD_LEN'hc0001073
 `define ADDR_LEN      5
