@@ -25,7 +25,7 @@ module core (
 
   // register
   reg [`WORD_LEN-1:0] regfile [0:`WORD_LEN-1];
-  reg [`WORD_LEN-1:0] csr_regfile [0:4];
+  reg [`WORD_LEN-1:0] csr_regfile [0:`CSR_REGS-1];
 
   // For IF
   reg [`WORD_LEN-1:0] pc_reg;
@@ -290,7 +290,7 @@ module core (
 
   always @(posedge clk, negedge rst_n) begin
     if (!rst_n) begin
-      for (i = 0; i < 4096; i = i + 1) begin
+      for (i = 0; i < `CSR_REGS; i = i + 1) begin
         csr_regfile[i] <= `WORD_LEN'b0;
       end
     end
