@@ -1,5 +1,5 @@
 `define WORD_LEN      32
-`define START_ADDR    `WORD_LEN'h8000
+`define START_ADDR    `WORD_LEN'h0000
 `define BUBBLE        `WORD_LEN'h00000013
 `define UNIMP         `WORD_LEN'hc0001073
 `define ADDR_LEN      5
@@ -48,11 +48,12 @@
 `define OP2_IMJ       `OP2_LEN'd4
 `define OP2_IMU       `OP2_LEN'd5
 
-`define MEM_LEN       2
+`define MEM_LEN       3
 `define MEM_X         `MEM_LEN'd0
 `define MEM_S         `MEM_LEN'd1
 `define MEM_V         `MEM_LEN'd2
-`define MEM_U         `MEM_LEN'd3
+`define MEM_B         `MEM_LEN'd3
+`define MEM_H         `MEM_LEN'd4
 
 `define REN_LEN       2
 `define REN_X         `REN_LEN'd0

@@ -34,7 +34,7 @@ def hexgen(data):
             | (regs[line[1]] << 7) \
             | (regs[arg2[1]] << 15) \
             | (int(imm, 2) << 20)
-    elif line[0] == 'sw'or line[0] == 'sb':
+    elif line[0] == 'sw'or line[0] == 'sb' or line[0] == 'sh':
       arg2 = re.split(r'[()]', line[2])
       imm = format(int(arg2[0]) & 0xfff, '012b')
       inst = insts[line[0]] \
