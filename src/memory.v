@@ -25,7 +25,7 @@ module memory #(
   end
 
   initial begin
-    $readmemh("/home/masato/src/cpu_riscv/hex/minitests/sb.hex", mem);
+    $readmemh("/home/masato/src/cpu_riscv/hex/minitests/sh.hex", mem);
   end
   
 endmodule
