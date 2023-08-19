@@ -9,3 +9,4 @@ ctest
 *.sh
 
 os/kernel/kernel
+os/kernel/kernel_qemu

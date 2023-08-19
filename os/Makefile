@@ -1,15 +1,19 @@
 K = kernel
 
 OBJS = \
-	$K/main.o \
+	$K/entry.o \
+	$K/start.o \
 	$K/console.o \
 	$K/printf.o \
-	$K/uart.o
+	$K/uart.o \
+	$K/main.o
 
 TOOLPREFIX = riscv64-unknown-elf-
 
+QEMU = qemu-system-riscv32
+
 CC = $(TOOLPREFIX)gcc
-# AS = $(TOOLPREFIX)gas
+AS = $(TOOLPREFIX)as
 LD = $(TOOLPREFIX)ld
 OBJCOPY = $(TOOLPREFIX)objcopy
 OBJDUMP = $(TOOLPREFIX)objdump
@@ -28,8 +32,26 @@ $K/kernel: $(OBJS) $K/kernel.ld
 	(yes " 00000000" | head -n 8192 && cat kernel.hex) > ../hex/kernel/kernel.hex
 	$(OBJDUMP) -b elf32-littleriscv -D $K/kernel > kernel.elf.dmp
 
+$K/kernel_qemu: $(OBJS) $K/kernel_qemu.ld
+	$(LD) -b elf32-littleriscv -T $K/kernel_qemu.ld -o $K/kernel_qemu $(OBJS)
+	$(OBJDUMP) -b elf32-littleriscv -D $K/kernel_qemu > kernel_qemu.elf.dmp
+
 %.o: %.c
 	$(CC) $(CFLAGS) -march=rv32i -mabi=ilp32 -c -o $@ $<
 
+%.o: %.S
+	$(AS) -march=rv32i -o $@ $<
+
 clean:
 	rm -f */*.o */*.d
+
+QEMUOPTS = -machine virt,aclint=on -bios none -kernel $K/kernel_qemu -m 128M -smp 1 -nographic
+# QEMUOPTS += -d in_asm
+# QEMUOPTS += -global virtio-mmio.force-legacy=false
+# QEMUOPTS += -drive file=fs.img,if=none,format=raw,id=x0
+# QEMUOPTS += -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
+
+# define QEMU -> set UART0 = 10000000L in memlayout.h.
+qemu: CFLAGS += -DQEMU
+qemu: $K/kernel_qemu
+	$(QEMU) $(QEMUOPTS)
