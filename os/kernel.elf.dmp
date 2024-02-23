@@ -6,7 +6,7 @@ Disassembly of section .text:
 
 80000000 <boot>:
 80000000:	800207b7          	lui	a5,0x80020
-80000004:	3c478793          	add	a5,a5,964 # 800203c4 <__stack_top>
+80000004:	2e078793          	add	a5,a5,736 # 800202e0 <__stack_top>
 80000008:	00078113          	mv	sp,a5
 8000000c:	2300006f          	j	8000023c <kernel_main>
 
@@ -93,7 +93,7 @@ Disassembly of section .text:
 8000012c:	0c078063          	beqz	a5,800001ec <printf+0x12c>
 80000130:	01279663          	bne	a5,s2,8000013c <printf+0x7c>
 80000134:	02500513          	li	a0,37
-80000138:	20c000ef          	jal	80000344 <putchar>
+80000138:	154000ef          	jal	8000028c <putchar>
 8000013c:	00148493          	add	s1,s1,1
 80000140:	0014c503          	lbu	a0,1(s1)
 80000144:	00148493          	add	s1,s1,1
@@ -118,7 +118,7 @@ Disassembly of section .text:
 80000190:	00a747b3          	xor	a5,a4,a0
 80000194:	40e787b3          	sub	a5,a5,a4
 80000198:	00810a93          	add	s5,sp,8
-8000019c:	35c58593          	add	a1,a1,860 # 8000035c <putchar+0x18>
+8000019c:	2a458593          	add	a1,a1,676 # 800002a4 <putchar+0x18>
 800001a0:	00f7f713          	and	a4,a5,15
 800001a4:	00e58733          	add	a4,a1,a4
 800001a8:	00074603          	lbu	a2,0(a4)
@@ -131,15 +131,15 @@ Disassembly of section .text:
 800001c4:	06054063          	bltz	a0,80000224 <printf+0x164>
 800001c8:	008a8433          	add	s0,s5,s0
 800001cc:	00044503          	lbu	a0,0(s0)
-800001d0:	174000ef          	jal	80000344 <putchar>
+800001d0:	0bc000ef          	jal	8000028c <putchar>
 800001d4:	00040793          	mv	a5,s0
 800001d8:	fff40413          	add	s0,s0,-1
 800001dc:	fefa98e3          	bne	s5,a5,800001cc <printf+0x10c>
 800001e0:	f5dff06f          	j	8000013c <printf+0x7c>
-800001e4:	160000ef          	jal	80000344 <putchar>
+800001e4:	0a8000ef          	jal	8000028c <putchar>
 800001e8:	f59ff06f          	j	80000140 <printf+0x80>
 800001ec:	02500513          	li	a0,37
-800001f0:	154000ef          	jal	80000344 <putchar>
+800001f0:	09c000ef          	jal	8000028c <putchar>
 800001f4:	f59ff06f          	j	8000014c <printf+0x8c>
 800001f8:	00412783          	lw	a5,4(sp)
 800001fc:	0007a403          	lw	s0,0(a5)
@@ -148,7 +148,7 @@ Disassembly of section .text:
 80000208:	00044503          	lbu	a0,0(s0)
 8000020c:	f20508e3          	beqz	a0,8000013c <printf+0x7c>
 80000210:	00140413          	add	s0,s0,1
-80000214:	130000ef          	jal	80000344 <putchar>
+80000214:	078000ef          	jal	8000028c <putchar>
 80000218:	00044503          	lbu	a0,0(s0)
 8000021c:	fe051ae3          	bnez	a0,80000210 <printf+0x150>
 80000220:	f1dff06f          	j	8000013c <printf+0x7c>
@@ -162,125 +162,61 @@ Disassembly of section .text:
 8000023c <kernel_main>:
 8000023c:	80000537          	lui	a0,0x80000
 80000240:	800007b7          	lui	a5,0x80000
-80000244:	3c478793          	add	a5,a5,964 # 800003c4 <__bss>
-80000248:	3c450613          	add	a2,a0,964 # 800003c4 <__bss>
-8000024c:	fd010113          	add	sp,sp,-48
+80000244:	2e078793          	add	a5,a5,736 # 800002e0 <__bss>
+80000248:	2e050613          	add	a2,a0,736 # 800002e0 <__bss>
+8000024c:	ff010113          	add	sp,sp,-16
 80000250:	40c78633          	sub	a2,a5,a2
 80000254:	00000593          	li	a1,0
-80000258:	3c450513          	add	a0,a0,964
-8000025c:	02112623          	sw	ra,44(sp)
-80000260:	02812423          	sw	s0,40(sp)
-80000264:	dadff0ef          	jal	80000010 <memset>
-80000268:	800005b7          	lui	a1,0x80000
-8000026c:	80000537          	lui	a0,0x80000
-80000270:	37058593          	add	a1,a1,880 # 80000370 <putchar+0x2c>
-80000274:	37850513          	add	a0,a0,888 # 80000378 <putchar+0x34>
-80000278:	e49ff0ef          	jal	800000c0 <printf>
-8000027c:	80000537          	lui	a0,0x80000
-80000280:	ff600593          	li	a1,-10
-80000284:	38450513          	add	a0,a0,900 # 80000384 <putchar+0x40>
-80000288:	e39ff0ef          	jal	800000c0 <printf>
-8000028c:	00900613          	li	a2,9
-80000290:	06100593          	li	a1,97
-80000294:	00810513          	add	a0,sp,8
-80000298:	d79ff0ef          	jal	80000010 <memset>
-8000029c:	80000437          	lui	s0,0x80000
-800002a0:	39440513          	add	a0,s0,916 # 80000394 <putchar+0x50>
-800002a4:	01410613          	add	a2,sp,20
-800002a8:	00810593          	add	a1,sp,8
-800002ac:	000108a3          	sb	zero,17(sp)
-800002b0:	00010a23          	sb	zero,20(sp)
-800002b4:	e0dff0ef          	jal	800000c0 <printf>
-800002b8:	00a00613          	li	a2,10
-800002bc:	00810593          	add	a1,sp,8
-800002c0:	01410513          	add	a0,sp,20
-800002c4:	d69ff0ef          	jal	8000002c <memcpy>
-800002c8:	01410613          	add	a2,sp,20
-800002cc:	39440513          	add	a0,s0,916
-800002d0:	00810593          	add	a1,sp,8
-800002d4:	dedff0ef          	jal	800000c0 <printf>
-800002d8:	800005b7          	lui	a1,0x80000
-800002dc:	3a858593          	add	a1,a1,936 # 800003a8 <putchar+0x64>
-800002e0:	01410513          	add	a0,sp,20
-800002e4:	d6dff0ef          	jal	80000050 <strcpy>
-800002e8:	01410613          	add	a2,sp,20
-800002ec:	39440513          	add	a0,s0,916
-800002f0:	00810593          	add	a1,sp,8
-800002f4:	dcdff0ef          	jal	800000c0 <printf>
-800002f8:	01410593          	add	a1,sp,20
-800002fc:	00810513          	add	a0,sp,8
-80000300:	d79ff0ef          	jal	80000078 <strcmp>
-80000304:	80000437          	lui	s0,0x80000
-80000308:	00050593          	mv	a1,a0
-8000030c:	3b040513          	add	a0,s0,944 # 800003b0 <putchar+0x6c>
-80000310:	db1ff0ef          	jal	800000c0 <printf>
-80000314:	00810593          	add	a1,sp,8
-80000318:	01410513          	add	a0,sp,20
-8000031c:	d35ff0ef          	jal	80000050 <strcpy>
-80000320:	01410593          	add	a1,sp,20
-80000324:	00810513          	add	a0,sp,8
-80000328:	d51ff0ef          	jal	80000078 <strcmp>
-8000032c:	00050593          	mv	a1,a0
-80000330:	3b040513          	add	a0,s0,944
-80000334:	d8dff0ef          	jal	800000c0 <printf>
-80000338:	10500073          	wfi
-8000033c:	10500073          	wfi
-80000340:	ff9ff06f          	j	80000338 <kernel_main+0xfc>
+80000258:	2e050513          	add	a0,a0,736
+8000025c:	00112623          	sw	ra,12(sp)
+80000260:	db1ff0ef          	jal	80000010 <memset>
+80000264:	80000537          	lui	a0,0x80000
+80000268:	2b850513          	add	a0,a0,696 # 800002b8 <putchar+0x2c>
+8000026c:	e55ff0ef          	jal	800000c0 <printf>
+80000270:	800005b7          	lui	a1,0x80000
+80000274:	80000537          	lui	a0,0x80000
+80000278:	00b00613          	li	a2,11
+8000027c:	2bc58593          	add	a1,a1,700 # 800002bc <putchar+0x30>
+80000280:	2c850513          	add	a0,a0,712 # 800002c8 <putchar+0x3c>
+80000284:	e3dff0ef          	jal	800000c0 <printf>
+80000288:	0000006f          	j	80000288 <kernel_main+0x4c>
 
-80000344 <putchar>:
-80000344:	10000737          	lui	a4,0x10000
-80000348:	00574783          	lbu	a5,5(a4) # 10000005 <boot-0x6ffffffb>
-8000034c:	0207f793          	and	a5,a5,32
-80000350:	fe078ce3          	beqz	a5,80000348 <putchar+0x4>
-80000354:	00a70023          	sb	a0,0(a4)
-80000358:	00008067          	ret
+8000028c <putchar>:
+8000028c:	10000737          	lui	a4,0x10000
+80000290:	00574783          	lbu	a5,5(a4) # 10000005 <boot-0x6ffffffb>
+80000294:	0207f793          	and	a5,a5,32
+80000298:	fe078ce3          	beqz	a5,80000290 <putchar+0x4>
+8000029c:	00a70023          	sb	a0,0(a4)
+800002a0:	00008067          	ret
 
 Disassembly of section .rodata:
 
-8000035c <__bss-0x68>:
-8000035c:	3130                	.2byte	0x3130
-8000035e:	3332                	.2byte	0x3332
-80000360:	3534                	.2byte	0x3534
-80000362:	3736                	.2byte	0x3736
-80000364:	3938                	.2byte	0x3938
-80000366:	6261                	.2byte	0x6261
-80000368:	66656463          	bltu	a0,t1,800009d0 <__bss+0x60c>
-8000036c:	0000                	.2byte	0x0
-8000036e:	0000                	.2byte	0x0
-80000370:	6c726f57          	.4byte	0x6c726f57
-80000374:	2164                	.2byte	0x2164
-80000376:	0000                	.2byte	0x0
-80000378:	0a0a                	.2byte	0xa0a
-8000037a:	6548                	.2byte	0x6548
-8000037c:	6c6c                	.2byte	0x6c6c
-8000037e:	7325206f          	j	80052ab0 <__stack_top+0x326ec>
-80000382:	000a                	.2byte	0xa
-80000384:	2031                	.2byte	0x2031
-80000386:	202d                	.2byte	0x202d
-80000388:	2035                	.2byte	0x2035
-8000038a:	202d                	.2byte	0x202d
-8000038c:	2036                	.2byte	0x2036
-8000038e:	203d                	.2byte	0x203d
-80000390:	7825                	.2byte	0x7825
-80000392:	000a                	.2byte	0xa
-80000394:	20637273          	.4byte	0x20637273
-80000398:	203a                	.2byte	0x203a
-8000039a:	7325                	.2byte	0x7325
-8000039c:	202c                	.2byte	0x202c
-8000039e:	7364                	.2byte	0x7364
-800003a0:	2074                	.2byte	0x2074
-800003a2:	203a                	.2byte	0x203a
-800003a4:	7325                	.2byte	0x7325
-800003a6:	000a                	.2byte	0xa
-800003a8:	6261                	.2byte	0x6261
-800003aa:	66656463          	bltu	a0,t1,80000a12 <__bss+0x64e>
-800003ae:	72730067          	jr	1831(t1)
-800003b2:	3d3d2063          	.4byte	0x3d3d2063
-800003b6:	6420                	.2byte	0x6420
-800003b8:	3f207473          	.4byte	0x3f207473
-800003bc:	203a                	.2byte	0x203a
-800003be:	7825                	.2byte	0x7825
-800003c0:	000a                	.2byte	0xa
+800002a4 <__bss-0x3c>:
+800002a4:	3130                	.2byte	0x3130
+800002a6:	3332                	.2byte	0x3332
+800002a8:	3534                	.2byte	0x3534
+800002aa:	3736                	.2byte	0x3736
+800002ac:	3938                	.2byte	0x3938
+800002ae:	6261                	.2byte	0x6261
+800002b0:	66656463          	bltu	a0,t1,80000918 <__bss+0x638>
+800002b4:	0000                	.2byte	0x0
+800002b6:	0000                	.2byte	0x0
+800002b8:	0a0a                	.2byte	0xa0a
+800002ba:	0000                	.2byte	0x0
+800002bc:	6e72656b          	.4byte	0x6e72656b
+800002c0:	6c65                	.2byte	0x6c65
+800002c2:	632e                	.2byte	0x632e
+800002c4:	0000                	.2byte	0x0
+800002c6:	0000                	.2byte	0x0
+800002c8:	4150                	.2byte	0x4150
+800002ca:	494e                	.2byte	0x494e
+800002cc:	25203a43          	.4byte	0x25203a43
+800002d0:	64253a73          	.4byte	0x64253a73
+800002d4:	203a                	.2byte	0x203a
+800002d6:	6f62                	.2byte	0x6f62
+800002d8:	6465746f          	jal	s0,8005791e <__stack_top+0x3763e>
+800002dc:	0a21                	.2byte	0xa21
+	...
 
 Disassembly of section .comment:
 
@@ -301,12 +237,12 @@ Disassembly of section .comment:
 Disassembly of section .riscv.attributes:
 
 00000000 <.riscv.attributes>:
-   0:	1f41                	.2byte	0x1f41
+   0:	1b41                	.2byte	0x1b41
    2:	0000                	.2byte	0x0
    4:	7200                	.2byte	0x7200
    6:	7369                	.2byte	0x7369
    8:	01007663          	bgeu	zero,a6,14 <boot-0x7fffffec>
-   c:	0015                	.2byte	0x15
+   c:	0011                	.2byte	0x11
    e:	0000                	.2byte	0x0
   10:	1004                	.2byte	0x1004
   12:	7205                	.2byte	0x7205
@@ -314,5 +250,3 @@ Disassembly of section .riscv.attributes:
   16:	6932                	.2byte	0x6932
   18:	7032                	.2byte	0x7032
   1a:	0031                	.2byte	0x31
-  1c:	0108                	.2byte	0x108
-  1e:	0b0a                	.2byte	0xb0a
