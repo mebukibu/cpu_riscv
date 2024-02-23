@@ -1,3 +1,8 @@
+OBJS = \
+	common.o \
+	kernel.o \
+	uart.o
+
 TOOLPREFIX = /opt/riscv/bin/riscv64-unknown-elf-
 
 QEMU = qemu-system-riscv32
@@ -10,8 +15,8 @@ OBJDUMP = $(TOOLPREFIX)objdump
 
 CFLAGS = -Wall -Werror -O2 -ffreestanding -nostdlib
 
-kernel: kernel.o kernel.ld
-	$(LD) -b elf32-littleriscv -T kernel.ld -o kernel kernel.o
+kernel: $(OBJS) kernel.ld
+	$(LD) -b elf32-littleriscv -T kernel.ld -o kernel $(OBJS)
 	$(OBJDUMP) -b elf32-littleriscv -D kernel > kernel.elf.dmp
 
 %.o: %.c
