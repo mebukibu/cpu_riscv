@@ -1,0 +1,65 @@
+
+kernel:     file format elf32-littleriscv
+
+
+Disassembly of section .text:
+
+80000000 <boot>:
+80000000:	800207b7          	lui	a5,0x80020
+80000004:	05478793          	add	a5,a5,84 # 80020054 <__stack_top>
+80000008:	00078113          	mv	sp,a5
+8000000c:	0200006f          	j	8000002c <kernel_main>
+
+80000010 <memset>:
+80000010:	00060c63          	beqz	a2,80000028 <memset+0x18>
+80000014:	00c50633          	add	a2,a0,a2
+80000018:	00050793          	mv	a5,a0
+8000001c:	00178793          	add	a5,a5,1
+80000020:	feb78fa3          	sb	a1,-1(a5)
+80000024:	fec79ce3          	bne	a5,a2,8000001c <memset+0xc>
+80000028:	00008067          	ret
+
+8000002c <kernel_main>:
+8000002c:	800007b7          	lui	a5,0x80000
+80000030:	80000737          	lui	a4,0x80000
+80000034:	05470713          	add	a4,a4,84 # 80000054 <__bss>
+80000038:	05478693          	add	a3,a5,84 # 80000054 <__bss>
+8000003c:	00d70a63          	beq	a4,a3,80000050 <kernel_main+0x24>
+80000040:	05478793          	add	a5,a5,84
+80000044:	00178793          	add	a5,a5,1
+80000048:	fe078fa3          	sb	zero,-1(a5)
+8000004c:	fee79ce3          	bne	a5,a4,80000044 <kernel_main+0x18>
+80000050:	0000006f          	j	80000050 <kernel_main+0x24>
+
+Disassembly of section .comment:
+
+00000000 <.comment>:
+   0:	3a434347          	.4byte	0x3a434347
+   4:	2820                	.2byte	0x2820
+   6:	65653267          	.4byte	0x65653267
+   a:	6535                	.2byte	0x6535
+   c:	3334                	.2byte	0x3334
+   e:	3030                	.2byte	0x3030
+  10:	3831                	.2byte	0x3831
+  12:	2029                	.2byte	0x2029
+  14:	3231                	.2byte	0x3231
+  16:	322e                	.2byte	0x322e
+  18:	302e                	.2byte	0x302e
+	...
+
+Disassembly of section .riscv.attributes:
+
+00000000 <.riscv.attributes>:
+   0:	1b41                	.2byte	0x1b41
+   2:	0000                	.2byte	0x0
+   4:	7200                	.2byte	0x7200
+   6:	7369                	.2byte	0x7369
+   8:	01007663          	bgeu	zero,a6,14 <boot-0x7fffffec>
+   c:	0011                	.2byte	0x11
+   e:	0000                	.2byte	0x0
+  10:	1004                	.2byte	0x1004
+  12:	7205                	.2byte	0x7205
+  14:	3376                	.2byte	0x3376
+  16:	6932                	.2byte	0x6932
+  18:	7032                	.2byte	0x7032
+  1a:	0031                	.2byte	0x31
