@@ -20,12 +20,12 @@ kernel: $(OBJS) kernel.ld
 	$(OBJDUMP) -b elf32-littleriscv -D kernel > kernel.elf.dmp
 
 %.o: %.c
-	$(CC) $(CFLAGS) -march=rv32i -mabi=ilp32 -c -o $@ $<
+	$(CC) $(CFLAGS) -march=rv32i_zicsr -mabi=ilp32 -c -o $@ $<
 
 clean:
 	rm -f *.o
 
-QEMUOPT = -machine virt -bios none -nographic -serial mon:stdio --no-reboot
+QEMUOPTS = -machine virt -bios none -nographic -serial mon:stdio --no-reboot
 
 qemu: kernel
-	$(QEMU) $(QEMUOPT) -kernel kernel
+	$(QEMU) $(QEMUOPTS) -kernel kernel

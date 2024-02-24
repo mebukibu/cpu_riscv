@@ -78,6 +78,15 @@ void printf(const char *fmt, ...) {
           
           while(--i >= 0)
             putchar(buf[i]);
+          
+          break;
+        }
+        case 'p': {
+          int value = va_arg(vargs, int);
+          for (int i = 7; i >= 0; i--) {
+            int nibble = (value >> (i * 4)) & 0xf;
+            putchar("0123456789abcdef"[nibble]);
+          }
         }
       }
     } else {
