@@ -1,10 +1,19 @@
 #pragma once
 #include "common.h"
 
-#define MSTATUS_MIE 1 << 3
+#define PROCS_MAX 8
+#define PROC_UNUSED   0
+#define PROC_RUNNABLE 1
 #define MSTATUS_MPP_MASK (3 << 11)
 #define MSTATUS_MPP_S (1 << 11)
 #define UART_BASE 0x10000000
+
+struct process {
+  int pid;
+  int state;
+  vaddr_t sp;
+  uint8_t stack[8192];
+};
 
 struct trap_frame {
   uint32_t ra;
