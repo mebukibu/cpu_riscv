@@ -4,14 +4,24 @@
 #define PROCS_MAX 8
 #define PROC_UNUSED   0
 #define PROC_RUNNABLE 1
-#define MSTATUS_MPP_MASK (3 << 11)
-#define MSTATUS_MPP_S (1 << 11)
+#define MSTATUS_MPP_MASK (3u << 11)
+#define MSTATUS_MPP_S    (1u << 11)
+#define SIE_SEIE         (1L << 9) // external
+#define SIE_STIE         (1L << 5) // timer
+#define SIE_SSIE         (1L << 1) // software
+#define SATP_SV32        (1u << 31)
+#define PAGE_V (1 << 0)
+#define PAGE_R (1 << 1)
+#define PAGE_W (1 << 2)
+#define PAGE_X (1 << 3)
+#define PAGE_U (1 << 4)
 #define UART_BASE 0x10000000
 
 struct process {
   int pid;
   int state;
   vaddr_t sp;
+  uint32_t *page_table;
   uint8_t stack[8192];
 };
 

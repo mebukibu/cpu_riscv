@@ -1,6 +1,7 @@
 #include "kernel.h"
 #include "common.h"
 
+extern char __kernel_base[];
 extern char __stack_top[];
 extern char __bss[], __bss_end[];
 extern char __free_ram[], __free_ram_end[];
@@ -19,6 +20,24 @@ paddr_t alloc_pages(uint32_t n) {
 
   memset((void *) paddr, 0, n * PAGE_SIZE);
   return paddr;
+}
+
+void map_page(uint32_t *table1, uint32_t vaddr, paddr_t paddr, uint32_t flags) {
+  // if (!is_aligned(vaddr, PAGE_SIZE))
+  //   PANIC("unaligned vaddr %x", vaddr);
+
+  // if (!is_aligned(paddr, PAGE_SIZE))
+  //   PANIC("unaligned paddr %x", paddr);
+
+  uint32_t vpn1 = (vaddr >> 22) & 0x3ff;
+  if ((table1[vpn1] & PAGE_V) == 0) {
+    uint32_t pt_paddr = alloc_pages(1);
+    table1[vpn1] = ((pt_paddr / PAGE_SIZE) << 10) | PAGE_V;
+  }
+
+  uint32_t vpn0 = (vaddr >> 12) & 0x3ff;
+  uint32_t *table0 = (uint32_t *) ((table1[vpn1] >> 10) * PAGE_SIZE);
+  table0[vpn0] = ((paddr / PAGE_SIZE) << 10) | flags | PAGE_V;
 }
 
 __attribute__((naked))
@@ -168,16 +187,23 @@ struct process *create_process(uint32_t pc) {
   *--sp = 0;                      // s0
   *--sp = (uint32_t) pc;          // ra
 
+  uint32_t *page_table = (uint32_t *) alloc_pages(1);
+
+  for (paddr_t paddr = (paddr_t) __kernel_base;
+       paddr < (paddr_t) __free_ram_end; paddr += PAGE_SIZE)
+    map_page(page_table, paddr, paddr, PAGE_R | PAGE_W | PAGE_X);
+
   proc->pid = i + 1;
   proc->state = PROC_RUNNABLE;
   proc->sp = (uint32_t) sp;
+  proc->page_table = page_table;
   return proc;
 }
 
 void yield(void) {
   struct process *next = idle_proc;
   for (int i = 0; i < PROCS_MAX; i++) {
-    struct process *proc = &procs[(current_proc->pid + i) & (PROCS_MAX-1)];
+    struct process *proc = &procs[(current_proc->pid + i) % PROCS_MAX];
     if (proc->state == PROC_RUNNABLE && proc->pid > 0) {
       next = proc;
       break;
@@ -187,14 +213,19 @@ void yield(void) {
   if (next == current_proc)
     return;
 
-  __asm__ __volatile__(
-      "csrw sscratch, %[sscratch]\n"
-      :
-      : [sscratch] "r" ((uint32_t) &next->stack[sizeof(next->stack)])
-  );
-
   struct process *prev = current_proc;
   current_proc = next;
+
+  __asm__ __volatile__(
+    // "sfence.vma\n"
+    // "csrw satp, %[satp]\n"
+    // "sfence.vma\n"
+    "csrw sscratch, %[sscratch]\n"
+    :
+    : // [satp] "r" (SATP_SV32 | ((uint32_t) next->page_table / PAGE_SIZE)),
+      [sscratch] "r" ((uint32_t) &next->stack[sizeof(next->stack)])
+  );
+
   switch_context(&prev->sp, &next->sp);
 }
 
@@ -261,11 +292,14 @@ void boot(void) {
 
   WRITE_CSR(mepc, (uint32_t) kernel_main);
 
-  WRITE_CSR(pmpaddr0, 0xffffffff);
-  WRITE_CSR(pmpcfg0, 0xf);
+  WRITE_CSR(satp, 0);
 
   WRITE_CSR(medeleg, 0xffff);
   WRITE_CSR(mideleg, 0xffff);
+  WRITE_CSR(sie, (READ_CSR(sie) | SIE_SEIE | SIE_STIE | SIE_SSIE));
+
+  WRITE_CSR(pmpaddr0, 0xffffffff);
+  WRITE_CSR(pmpcfg0, 0xf);
 
   __asm__ __volatile__("mret");
 }
