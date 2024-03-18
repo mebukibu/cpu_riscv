@@ -19,6 +19,7 @@ CFLAGS = -Wall -Werror -O2 -ffreestanding -nostdlib
 
 kernel.elf: $(OBJS) kernel.ld
 	$(LD) -b elf32-littleriscv -T user.ld -o shell.elf shell.o user.o common.o
+	$(OBJDUMP) -b elf32-littleriscv -D shell.elf > shell.elf.dmp
 	$(OBJCOPY) --set-section-flags .bss=alloc,contents -O binary shell.elf shell.bin
 	$(OBJCOPY) -Ibinary -Oelf32-littleriscv shell.bin shell.bin.o
 	$(LD) -b elf32-littleriscv -T kernel.ld -o kernel.elf kernel.o common.o uart.o shell.bin.o

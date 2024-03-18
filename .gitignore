@@ -9,4 +9,4 @@ ctest
 *.sh
 
 .vscode
-os/kernel
+*.elf

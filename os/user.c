@@ -6,7 +6,7 @@ __attribute__((noreturn)) void exit(void) {
   for (;;);
 }
 
-void putchar(char c) {
+void putchar(char ch) {
 
 }
 
