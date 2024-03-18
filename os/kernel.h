@@ -18,8 +18,14 @@
 #define PAGE_W (1 << 2)
 #define PAGE_X (1 << 3)
 #define PAGE_U (1 << 4)
+
+#ifdef QEMU
 #define USER_BASE 0x80000928
 #define UART_BASE 0x10000000
+#else
+#define USER_BASE 0x8928
+#define UART_BASE 0x1000
+#endif
 
 struct process {
   int pid;
