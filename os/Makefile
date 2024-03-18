@@ -17,21 +17,24 @@ OBJDUMP = $(TOOLPREFIX)objdump
 
 CFLAGS = -Wall -Werror -O2 -ffreestanding -nostdlib
 
-kernel.elf: $(OBJS) kernel.ld user.ld
-	$(LD) -b elf32-littleriscv -T user.ld -o shell.elf shell.o user.o common.o
-	$(OBJDUMP) -b elf32-littleriscv -D shell.elf > shell.elf.dmp
+kernel_elf 			= kernel.elf
+kernel_qemu_elf = kernel_qemu.elf
+
+$(kernel_qemu_elf): $(OBJS) kernel_qemu.ld user_qemu.ld
+	$(LD) -b elf32-littleriscv -T user_qemu.ld -o shell.elf shell.o user.o common.o
+	$(OBJDUMP) -b elf32-littleriscv -D shell.elf > shell_qemu.elf.dmp
 	$(OBJCOPY) --set-section-flags .bss=alloc,contents -O binary shell.elf shell.bin
 	$(OBJCOPY) -I binary -O elf32-littleriscv shell.bin shell.bin.o
-	$(LD) -b elf32-littleriscv -T kernel.ld -o kernel.elf kernel.o common.o uart.o shell.bin.o
-	$(OBJDUMP) -b elf32-littleriscv -D kernel.elf > kernel.elf.dmp
+	$(LD) -b elf32-littleriscv -T kernel_qemu.ld -o $(kernel_qemu_elf) kernel.o common.o uart.o shell.bin.o
+	$(OBJDUMP) -b elf32-littleriscv -D $(kernel_qemu_elf) > kernel_qemu.elf.dmp
 
 %.o: %.c
 	$(CC) $(CFLAGS) -march=rv32i_zicsr -mabi=ilp32 -c -o $@ $<
 
 clean:
-	rm -f *.o *.bin *.elf
+	rm -f *.o *.bin *.elf *.dmp
 
 QEMUOPTS = -machine virt -bios none -nographic -serial mon:stdio --no-reboot
 
-qemu: kernel.elf
-	$(QEMU) $(QEMUOPTS) -kernel kernel.elf
+qemu: $(kernel_qemu_elf)
+	$(QEMU) $(QEMUOPTS) -kernel $(kernel_qemu_elf)

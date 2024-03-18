@@ -1,5 +1,5 @@
 
-kernel.elf:     file format elf32-littleriscv
+kernel_qemu.elf:     file format elf32-littleriscv
 
 
 Disassembly of section .text:
