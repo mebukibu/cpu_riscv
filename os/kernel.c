@@ -250,12 +250,43 @@ void yield(void) {
   switch_context(&prev->sp, &next->sp);
 }
 
+void handle_syscall(struct trap_frame *f) {
+  switch (f->a3) {
+    case SYS_PUTCHAR:
+      putchar(f->a0);
+      break;
+    case SYS_GETCHAR:
+      while (1) {
+        long ch = getchar();
+        if (ch >= 0) {
+          f->a0 = ch;
+          break;
+        }
+        yield();
+      }
+      break;
+    case SYS_EXIT:
+      printf("process %d exited\n", current_proc->pid);
+      current_proc->state = PROC_EXITED;
+      yield();
+      PANIC("unreachable");
+    default:
+      PANIC("unexpected syscall a3=%x\n", f->a3);
+  }
+}
+
 void handle_trap(struct trap_frame *f) {
   uint32_t scause = READ_CSR(scause);
   uint32_t stval = READ_CSR(stval);
   uint32_t user_pc = READ_CSR(sepc);
+  if (scause == SCAUSE_ECALL) {
+    handle_syscall(f);
+    user_pc += 4;
+  } else {
+    PANIC("unexpected trap scause=%x, stval=%x, sepc=%x\n", scause, stval, user_pc);
+  }
 
-  PANIC("unexpected trap scause=%p, stval=%p, sepc=%p\n", scause, stval, user_pc);
+  WRITE_CSR(sepc, user_pc);
 }
 
 void kernel_main(void) {
@@ -295,33 +326,6 @@ void boot(void) {
 
   WRITE_CSR(pmpaddr0, 0xffffffff);
   WRITE_CSR(pmpcfg0, 0xf);
-
-  // __asm__ __volatile__(
-  //   "csrr	a5,mstatus\n"
-  //   "lui	a4,0xffffe\n"
-  //   "add	a4,a4,2047\n"
-  //   "and	a5,a5,a4\n"
-  //   "lui	a4,0x1\n"
-  //   "add	a4,a4,-2048\n"
-  //   "or	a5,a5,a4\n"
-  //   "csrw	mstatus,a5\n"
-  //   "lui	a5,0x80000\n"
-  //   "add	a5,a5,1592\n"
-  //   "csrw	mepc,a5\n"
-  //   "li	a5,0\n"
-  //   "csrw	satp,a5\n"
-  //   "lui	a5,0x10\n"
-  //   "add	a5,a5,-1\n"
-  //   "csrw	medeleg,a5\n"
-  //   "csrw	mideleg,a5\n"
-  //   "csrr	a5,sie\n"
-  //   "or	a5,a5,546\n"
-  //   "csrw	sie,a5\n"
-  //   "li	a5,-1\n"
-  //   "csrw	pmpaddr0,a5\n"
-  //   "li	a5,15\n"
-  //   "csrw	pmpcfg0,a5\n"
-  // );
 
   __asm__ __volatile__("mret");
 }

@@ -4,6 +4,7 @@
 #define PROCS_MAX 8
 #define PROC_UNUSED   0
 #define PROC_RUNNABLE 1
+#define PROC_EXITED   2
 #define MSTATUS_MPP_MASK (3u << 11)
 #define MSTATUS_MPP_S    (1u << 11)
 #define SIE_SEIE         (1L << 9) // external
@@ -11,12 +12,13 @@
 #define SIE_SSIE         (1L << 1) // software
 #define SATP_SV32        (1u << 31)
 #define SSTATUS_SPIE     (1u << 5)
+#define SCAUSE_ECALL 8
 #define PAGE_V (1 << 0)
 #define PAGE_R (1 << 1)
 #define PAGE_W (1 << 2)
 #define PAGE_X (1 << 3)
 #define PAGE_U (1 << 4)
-#define USER_BASE 0x80000a84
+#define USER_BASE 0x80000c20
 #define UART_BASE 0x10000000
 
 struct process {
@@ -79,3 +81,6 @@ struct trap_frame {
     printf("PANIC: %s:%x: " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__);  \
     while (1) {}                                                           \
   } while (0)
+
+void putchar(char ch);
+char getchar(void);

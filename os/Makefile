@@ -17,11 +17,11 @@ OBJDUMP = $(TOOLPREFIX)objdump
 
 CFLAGS = -Wall -Werror -O2 -ffreestanding -nostdlib
 
-kernel.elf: $(OBJS) kernel.ld
+kernel.elf: $(OBJS) kernel.ld user.ld
 	$(LD) -b elf32-littleriscv -T user.ld -o shell.elf shell.o user.o common.o
 	$(OBJDUMP) -b elf32-littleriscv -D shell.elf > shell.elf.dmp
 	$(OBJCOPY) --set-section-flags .bss=alloc,contents -O binary shell.elf shell.bin
-	$(OBJCOPY) -Ibinary -Oelf32-littleriscv shell.bin shell.bin.o
+	$(OBJCOPY) -I binary -O elf32-littleriscv shell.bin shell.bin.o
 	$(LD) -b elf32-littleriscv -T kernel.ld -o kernel.elf kernel.o common.o uart.o shell.bin.o
 	$(OBJDUMP) -b elf32-littleriscv -D kernel.elf > kernel.elf.dmp
 
@@ -29,7 +29,7 @@ kernel.elf: $(OBJS) kernel.ld
 	$(CC) $(CFLAGS) -march=rv32i_zicsr -mabi=ilp32 -c -o $@ $<
 
 clean:
-	rm -f *.o
+	rm -f *.o *.bin *.elf
 
 QEMUOPTS = -machine virt -bios none -nographic -serial mon:stdio --no-reboot
 

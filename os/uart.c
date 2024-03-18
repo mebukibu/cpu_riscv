@@ -34,3 +34,13 @@ void putchar(char ch) {
     ;
   WriteReg(THR, ch);
 }
+
+char getchar(void) {
+  char ch;
+
+  while((ReadReg(LSR) & LSR_RX_READY) == 0)
+    ;
+  ch = ReadReg(RHR);
+
+  return ch;
+}
