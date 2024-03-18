@@ -1,7 +1,7 @@
 ENTRY(start)
 
 SECTIONS {
-  . = 0x80000c20;
+  . = 0x80000928;
 
   .text :{
     KEEP(*(.text.start));
@@ -19,10 +19,8 @@ SECTIONS {
   .bss : ALIGN(4) {
     *(.bss .bss.* .sbss .sbss.*);
 
-    . = ALIGN(16); /* https://github.com/nuta/operating-system-in-1000-lines/pull/23 */
-    . += 64 * 1024; /* 64KB */
+    . = ALIGN(16);
+    . += 1 * 1024;
     __stack_top = .;
-
-    /* ASSERT(. < 0x1800000, "too large executable"); */
   }
 }

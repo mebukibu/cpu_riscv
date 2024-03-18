@@ -58,7 +58,7 @@ void printf(const char *fmt, ...) {
           }
           break;
         }
-        case 'x': {
+        case 'i': {
           char buf[8];
           uint32_t x;
           int i = 0;
@@ -81,7 +81,7 @@ void printf(const char *fmt, ...) {
           
           break;
         }
-        case 'p': {
+        case 'x': {
           int value = va_arg(vargs, int);
           for (int i = 7; i >= 0; i--) {
             int nibble = (value >> (i * 4)) & 0xf;

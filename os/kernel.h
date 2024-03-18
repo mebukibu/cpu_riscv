@@ -1,7 +1,7 @@
 #pragma once
 #include "common.h"
 
-#define PROCS_MAX 8
+#define PROCS_MAX 4
 #define PROC_UNUSED   0
 #define PROC_RUNNABLE 1
 #define PROC_EXITED   2
@@ -18,15 +18,15 @@
 #define PAGE_W (1 << 2)
 #define PAGE_X (1 << 3)
 #define PAGE_U (1 << 4)
-#define USER_BASE 0x80000c20
+#define USER_BASE 0x80000928
 #define UART_BASE 0x10000000
 
 struct process {
   int pid;
   int state;
   vaddr_t sp;
-  uint32_t *page_table;
-  uint8_t stack[8192];
+  // uint32_t *page_table;
+  uint8_t stack[1024];
 };
 
 struct trap_frame {
@@ -78,7 +78,7 @@ struct trap_frame {
 
 #define PANIC(fmt, ...)                                                    \
   do {                                                                     \
-    printf("PANIC: %s:%x: " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__);  \
+    printf("PANIC: %s:%i: " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__);  \
     while (1) {}                                                           \
   } while (0)
 
