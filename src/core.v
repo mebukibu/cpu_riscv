@@ -12,7 +12,6 @@ module core (
   input wire clk,
   input wire rst_n,
   output wire exit,
-  output wire [`WORD_LEN-1:0] gp,
   // ImemPort
   input wire [`WORD_LEN-1:0] inst,
   output wire [`WORD_LEN-1:0] addr_i,
@@ -25,7 +24,7 @@ module core (
 
   // register
   reg [`WORD_LEN-1:0] regfile [0:`WORD_LEN-1];
-  reg [`WORD_LEN-1:0] csr_regfile [0:4];
+  reg [`WORD_LEN-1:0] csr_regfile [0:`CSR_NUM-1];
 
   // For IF
   reg [`WORD_LEN-1:0] pc_reg;
@@ -111,10 +110,11 @@ module core (
   assign pc_plus4 = pc_reg + `WORD_LEN'h4;
   assign jmp_flg = (inst_masked_uj == `JAL | inst_masked_isb == `JALR);
 
-  assign pc_next = br_flg  ? br_target : `WORD_LEN'bZ;
-  assign pc_next = jmp_flg ? alu_out : `WORD_LEN'bZ;
-  assign pc_next = (inst == `ECALL) ? csr_regfile[`CSR_ADDR_MTVBS] : `WORD_LEN'bZ;
-  assign pc_next = !(br_flg | jmp_flg | inst == `ECALL) ? pc_plus4 : `WORD_LEN'bZ;
+  assign pc_next = br_flg  ? br_target : 
+                   jmp_flg ? alu_out   : 
+                   (inst == `MRET ) ? csr_regfile[`CSR_ADDR_LEN'h005] :
+                   (inst == `SRET ) ? csr_regfile[`CSR_ADDR_LEN'h00d] :
+                   (inst == `ECALL) ? csr_regfile[`CSR_ADDR_LEN'h00b] : pc_plus4;
 
   always @(posedge clk, negedge rst_n) begin
     if (!rst_n) pc_reg <= `START_ADDR;
@@ -183,6 +183,8 @@ module core (
         `CSRRSI : begin exe_fun <= `ALU_COPY1; op1_sel <= `OP1_IMZ; op2_sel <= `OP2_X;   mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_CSR; csr_cmd <= `CSR_S; end
         `CSRRC  : begin exe_fun <= `ALU_COPY1; op1_sel <= `OP1_RS1; op2_sel <= `OP2_X;   mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_CSR; csr_cmd <= `CSR_C; end
         `CSRRCI : begin exe_fun <= `ALU_COPY1; op1_sel <= `OP1_IMZ; op2_sel <= `OP2_X;   mem_wen <= `MEM_X; rf_wen <= `REN_S; wb_sel <= `WB_CSR; csr_cmd <= `CSR_C; end
+        `MRET   : begin exe_fun <= `ALU_X;     op1_sel <= `OP1_X;   op2_sel <= `OP2_X;   mem_wen <= `MEM_X; rf_wen <= `REN_X; wb_sel <= `WB_X;   csr_cmd <= `CSR_X; end
+        `SRET   : begin exe_fun <= `ALU_X;     op1_sel <= `OP1_X;   op2_sel <= `OP2_X;   mem_wen <= `MEM_X; rf_wen <= `REN_X; wb_sel <= `WB_X;   csr_cmd <= `CSR_X; end
         `ECALL  : begin exe_fun <= `ALU_X;     op1_sel <= `OP1_X;   op2_sel <= `OP2_X;   mem_wen <= `MEM_X; rf_wen <= `REN_X; wb_sel <= `WB_X;   csr_cmd <= `CSR_E; end
         default:
         case (inst_masked_r)
@@ -278,29 +280,46 @@ module core (
   assign wdata = (mem_wen == `MEM_H & addr_d[1] == 1'b0) ? {rdata[31:16], rs2_data[15:0]} : `WORD_LEN'bZ;
   assign wdata = (mem_wen == `MEM_H & addr_d[1] == 1'b1) ? {rs2_data[15:0],  rdata[15:0]} : `WORD_LEN'bZ;
 
-  assign csr_addr =  (inst[31:20] == `CSR_ADDR_LEN'h300) ? `CSR_ADDR_MS    : `CSR_ADDR_LEN'bZ;
-  assign csr_addr =  (inst[31:20] == `CSR_ADDR_LEN'h305) ? `CSR_ADDR_MTVBS : `CSR_ADDR_LEN'bZ;
-  assign csr_addr =  (inst[31:20] == `CSR_ADDR_LEN'h341) ? `CSR_ADDR_MEPC  : `CSR_ADDR_LEN'bZ;
-  assign csr_addr =  (inst[31:20] == `CSR_ADDR_LEN'h342 | csr_cmd == `CSR_E) ? `CSR_ADDR_MC : `CSR_ADDR_LEN'bZ;
-  assign csr_addr = !(inst[31:20] == `CSR_ADDR_LEN'h300 | inst[31:20] == `CSR_ADDR_LEN'h305 |
-                      inst[31:20] == `CSR_ADDR_LEN'h341 | inst[31:20] == `CSR_ADDR_LEN'h342 | csr_cmd == `CSR_E) ? `CSR_ADDR_X : `CSR_ADDR_LEN'bZ;
+  assign csr_addr = (inst[31:20] == `CSR_MSTATUS ) ? `CSR_ADDR_LEN'h001 :
+                    (inst[31:20] == `CSR_MEDELEG ) ? `CSR_ADDR_LEN'h002 :
+                    (inst[31:20] == `CSR_MIDELEG ) ? `CSR_ADDR_LEN'h003 :
+                    (inst[31:20] == `CSR_MTVEC   ) ? `CSR_ADDR_LEN'h004 :
+                    (inst[31:20] == `CSR_MEPC    ) ? `CSR_ADDR_LEN'h005 :
+                    (inst[31:20] == `CSR_MCAUSE  ) ? `CSR_ADDR_LEN'h006 :
+                    (inst[31:20] == `CSR_PMPCFG0 ) ? `CSR_ADDR_LEN'h007 :
+                    (inst[31:20] == `CSR_PMPADDR0) ? `CSR_ADDR_LEN'h008 :
+                    (inst[31:20] == `CSR_SSTATUS ) ? `CSR_ADDR_LEN'h009 :
+                    (inst[31:20] == `CSR_SIE     ) ? `CSR_ADDR_LEN'h00a :
+                    (inst[31:20] == `CSR_STVEC   ) ? `CSR_ADDR_LEN'h00b :
+                    (inst[31:20] == `CSR_SSCRATCH) ? `CSR_ADDR_LEN'h00c :
+                    (inst[31:20] == `CSR_SEPC    ) ? `CSR_ADDR_LEN'h00d :
+                    (inst[31:20] == `CSR_SCAUSE  ) ? `CSR_ADDR_LEN'h00e :
+                    (inst[31:20] == `CSR_STVAL   ) ? `CSR_ADDR_LEN'h00f :
+                    (inst[31:20] == `CSR_SATP    ) ? `CSR_ADDR_LEN'h010 :
+                    (csr_cmd     == `CSR_E       ) ? `CSR_ADDR_LEN'h00e : `CSR_ADDR_X;
+
 
   assign csr_rdata = csr_regfile[csr_addr];
 
   assign csr_wdata = (csr_cmd == `CSR_W) ?  op1_data : `WORD_LEN'bZ;
   assign csr_wdata = (csr_cmd == `CSR_S) ? (csr_rdata | op1_data) : `WORD_LEN'bZ;
   assign csr_wdata = (csr_cmd == `CSR_C) ? (csr_rdata & ~op1_data) : `WORD_LEN'bZ;
-  assign csr_wdata = (csr_cmd == `CSR_E) ? `WORD_LEN'd11 : `WORD_LEN'bZ;
+  assign csr_wdata = (csr_cmd == `CSR_E) ? `WORD_LEN'd8 : `WORD_LEN'bZ;
 
   always @(posedge clk, negedge rst_n) begin
     if (!rst_n) begin
-      for (i = 0; i < 4096; i = i + 1) begin
+      for (i = 0; i < `CSR_NUM; i = i + 1) begin
         csr_regfile[i] <= `WORD_LEN'b0;
       end
     end
     else if (state == `MEM) begin
-      if (csr_cmd > `CSR_LEN'b0)
+      if (inst == `ECALL) begin
+        csr_regfile[`CSR_ADDR_LEN'h00d] <= pc_reg;
+        csr_regfile[`CSR_ADDR_LEN'h00e] <= csr_wdata;
+      end
+      else if (csr_cmd > `CSR_LEN'b0) begin
         csr_regfile[csr_addr] <= csr_wdata;
+      end
     end
   end
 
@@ -334,6 +353,5 @@ module core (
   //**********************************
   // Debug
   assign exit = (inst == `UNIMP);
-  assign gp = regfile[3];
 
 endmodule

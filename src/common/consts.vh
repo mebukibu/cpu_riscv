@@ -86,10 +86,25 @@
 `define CSR_C         `CSR_LEN'd3
 `define CSR_E         `CSR_LEN'd4
 `define CSR_V         `CSR_LEN'd5
+`define CSR_NUM       17
 
 // CSR address
-`define CSR_ADDR_X    `CSR_ADDR_LEN'h0
-`define CSR_ADDR_MS   `CSR_ADDR_LEN'h1
-`define CSR_ADDR_MTVBS`CSR_ADDR_LEN'h2
-`define CSR_ADDR_MEPC `CSR_ADDR_LEN'h3
-`define CSR_ADDR_MC   `CSR_ADDR_LEN'h4
+`define CSR_ADDR_X    `CSR_ADDR_LEN'h000
+
+`define CSR_MSTATUS   `CSR_ADDR_LEN'h300
+`define CSR_MEDELEG   `CSR_ADDR_LEN'h302
+`define CSR_MIDELEG   `CSR_ADDR_LEN'h303
+`define CSR_MTVEC     `CSR_ADDR_LEN'h305
+`define CSR_MEPC      `CSR_ADDR_LEN'h341
+`define CSR_MCAUSE    `CSR_ADDR_LEN'h342
+`define CSR_PMPCFG0   `CSR_ADDR_LEN'h3a0
+`define CSR_PMPADDR0  `CSR_ADDR_LEN'h3b0
+
+`define CSR_SSTATUS   `CSR_ADDR_LEN'h100
+`define CSR_SIE       `CSR_ADDR_LEN'h104
+`define CSR_STVEC     `CSR_ADDR_LEN'h105
+`define CSR_SSCRATCH  `CSR_ADDR_LEN'h140
+`define CSR_SEPC      `CSR_ADDR_LEN'h141
+`define CSR_SCAUSE    `CSR_ADDR_LEN'h142
+`define CSR_STVAL     `CSR_ADDR_LEN'h143
+`define CSR_SATP      `CSR_ADDR_LEN'h180

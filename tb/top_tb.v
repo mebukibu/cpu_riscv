@@ -3,7 +3,6 @@ module top_tb ();
   reg clk;
   reg rst_n;
   wire exit;
-  wire [2:0] gp;
 
   integer i;
 
@@ -17,7 +16,7 @@ module top_tb ();
     rst_n = 0; #20;
     rst_n = 1; #5;
 
-    for (i = 0; i < 10; i = i + 1) begin
+    for (i = 0; i < 13 * 1024; i = i + 1) begin
       #45;
       $display("pc_reg    : 0x%h", top_tb.top0.core0.pc_reg);
       $display("inst      : 0x%h", top_tb.top0.core0.inst);
@@ -30,7 +29,7 @@ module top_tb ();
       // $display("addr_d    : %d", top_tb.top0.core0.addr_d);
       // $display("wen       :  %d", top_tb.top0.core0.wen);
       // $display("wdata     : 0x%h", top_tb.top0.core0.wdata);
-      // $display("gp        : %d", gp);
+      // $display("gp        : 0x%h", top_tb.top0.core0.gp);
       $display("exit      : %d", exit);
       $display("---------");
       #5;
