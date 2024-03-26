@@ -3,6 +3,8 @@ module top_tb ();
   reg clk;
   reg rst_n;
   wire exit;
+  wire uart_in;
+  wire uart_out;
 
   integer i;
 

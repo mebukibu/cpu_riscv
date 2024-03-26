@@ -108,3 +108,12 @@
 `define CSR_SCAUSE    `CSR_ADDR_LEN'h142
 `define CSR_STVAL     `CSR_ADDR_LEN'h143
 `define CSR_SATP      `CSR_ADDR_LEN'h180
+
+// UART consts
+`define UART_ADDR     `WORD_LEN'h1000
+`define UART_LEN      8
+`define UART_RHR      0
+`define UART_THR      0
+`define UART_LSR      5
+`define LSR_RX_READY  0
+`define LSR_TX_IDLE   5
