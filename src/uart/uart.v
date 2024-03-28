@@ -27,12 +27,14 @@ module uart (
 
   // For fifo_trans
   wire [`UART_LEN-1:0] wdata_fifo_trans, rdata_fifo_trans;
-  reg wen_fifo_trans, ren_fifo_trans;
+  reg wen_fifo_trans;
+  wire ren_fifo_trans;
   wire empty_fifo_trans, full_fifo_trans;
 
   // For fifo_recv
   wire [`UART_LEN-1:0] wdata_fifo_recv, rdata_fifo_recv;
-  reg wen_fifo_recv, ren_fifo_recv;
+  wire wen_fifo_recv;
+  reg ren_fifo_recv;
   wire empty_fifo_recv, full_fifo_recv;
 
   // For Controller

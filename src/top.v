@@ -8,7 +8,7 @@ module top (
   output wire uart_out
 );
 
-  parameter WAIT_DIV = 868;  // 100 MHz / 115.2 kbs
+  parameter WAIT_DIV = 104;  // 12 MHz / 115.2 kbs
 
   // For core
   wire [`WORD_LEN-1:0] addr_i;
